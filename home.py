@@ -82,6 +82,8 @@ def create_page_home():
                                 id="building-table",
                                 data=df_buildings.to_dict("records"),
                                 row_selectable="single",
+                                row_deletable=False,
+                                selected_rows=[],
                                 active_cell=None,
                                 filter_action="native",
                                 sort_action="native",
@@ -153,21 +155,23 @@ def create_page_home():
 # =====================================================
 # Callbacks
 # =====================================================
+
 @callback(
     Output("building-map", "figure"),
     Input("building-table", "derived_virtual_data"),
-    Input("building-table", "active_cell"),
+    Input("building-table", "selected_rows"),
 )
-def update_map(filtered_rows, active_cell):
+def update_map(filtered_rows, selected_rows):
 
     dff = df_buildings if filtered_rows is None else pd.DataFrame(filtered_rows)
     center = GENEVA_CENTER
 
-    if active_cell:
-        row = dff.iloc[active_cell["row"]]
-        center = {"lat": row["lat"], "lon": row["lon"]}
+    selected_id = None
 
-    zoom = 15 if active_cell else 12
+    if selected_rows:
+        row = dff.iloc[selected_rows[0]]
+        selected_id = row["id"]
+        center = {"lat": row["lat"], "lon": row["lon"]}
 
     fig = px.scatter_mapbox(
         dff,
@@ -175,16 +179,13 @@ def update_map(filtered_rows, active_cell):
         lon="lon",
         size="chaud_puissance_installee_kW",
         hover_name="nom",
-        hover_data={
-            "lat": False,
-            "lon": False,
-            "chaud_puissance_installee_kW": True,
-            "chaud_conso_annuelle": True,
-            "sre": True,
-        },
-
-        custom_data=["id"],
-        zoom=zoom,
+        custom_data=[
+            "sre",
+            "chaud_puissance_installee_kW",
+            "chaud_ratio_puiss_inst_W_m2"
+        ]
+        ,
+        zoom=13,
     )
 
     fig.update_layout(
@@ -192,13 +193,29 @@ def update_map(filtered_rows, active_cell):
         mapbox_center=center,
         margin={"l": 0, "r": 0, "t": 0, "b": 0},
         showlegend=False,
+        separators=". "
     )
 
+    # Highlight sélection
     fig.update_traces(
-        marker=dict(sizemin=10)
+        marker=dict(
+            sizemin=10,
+            color=[
+                "purple" if i == selected_id else "blue"
+                for i in dff["id"]
+            ]
+        ),
+        hovertemplate=
+        "<b>%{hovertext}</b><br><br>" +
+        "SRE : %{customdata[0]:,.0f} m²<br>" +
+        "Puissance chaud installée : %{customdata[1]:,.0f} kW<br>" +
+        "Ratio chaud installé : %{customdata[2]:,.1f} W/m²<br>" +
+        "<extra></extra>"
+
     )
 
     return fig
+
 
 
 @callback(
