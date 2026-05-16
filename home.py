@@ -139,13 +139,40 @@ def create_page_home():
                         ],
                     ),
 
-                    # ================== MAP ==================
+                    # ================== PANEL AND MAP ==================
+
                     html.Div(
-                        style={"height": "60%"},
+                        style={
+                            "height": "60%",
+                            "display": "flex",
+                        },
                         children=[
-                            dcc.Graph(id="building-map", style={"height": "100%"})
+
+                            # SIDE PANEL
+                            html.Div(
+                                id="side-panel",
+                                style={
+                                    "width": "0%",  # hidden by default
+                                    "transition": "0.3s",
+                                    "overflow": "hidden",
+                                    "backgroundColor": "#f9f9f9",
+                                    "borderRight": "1px solid #ddd",
+                                    "padding": "10px"
+                                },
+                                children=[]
+                            ),
+
+                            # MAP
+                            html.Div(
+                                id="map-container",
+                                style={"width": "100%", "height": "100%"},
+                                children=[
+                                    dcc.Graph(id="building-map", style={"height": "100%"})
+                                ],
+                            ),
                         ],
-                    ),
+                    )
+                    ,
                 ],
             ),
         ],
@@ -215,6 +242,70 @@ def update_map(filtered_rows, selected_rows):
     )
 
     return fig
+
+
+@callback(
+    Output("side-panel", "children"),
+    Output("side-panel", "style"),
+    Input("building-table", "selected_rows"),
+    State("building-table", "derived_virtual_data"),
+)
+def update_side_panel(selected_rows, rows):
+
+    if not selected_rows or rows is None:
+        # ✅ HIDE panel
+        return [], {
+            "width": "0%",
+            "transition": "0.3s",
+            "overflow": "hidden",
+        }
+
+    dff = pd.DataFrame(rows)
+    row = dff.iloc[selected_rows[0]]
+
+    # ✅ CONTENT
+    content = html.Div([
+        html.H3(row["nom"]),
+        html.Hr(),
+
+        html.P(f"EGID: {row['egid']}"),
+        html.P(f"SRE: {row['sre']:,} m²".replace(",", " ")),
+        html.P(f"Affectation: {row['affectations']}"),
+
+        html.H4("Chaud"),
+        html.P(f"Producteur: {row['chaud_producteur']}"),
+        html.P(f"Puissance installée: {row['chaud_puissance_installee_kW']:,} kW".replace(",", " ")),
+        html.P(f"Ratio: {row['chaud_ratio_puiss_inst_W_m2']} W/m²"),
+        html.P(f"Conso annuelle: {row['chaud_conso_annuelle']:,} kWh".replace(",", " ")),
+
+        html.H4("Froid"),
+        html.P(f"Producteur: {row['froid_producteur']}"),
+        html.P(f"Puissance installée: {row['froid_puissance_installee_kW']:,} kW".replace(",", " ")),
+    ])
+
+    # ✅ SHOW panel
+    style = {
+        "width": "30%",
+        "transition": "0.3s",
+        "overflowY": "auto",
+        "backgroundColor": "#f9f9f9",
+        "borderRight": "1px solid #ddd",
+        "padding": "15px"
+    }
+
+    return content, style
+
+
+@callback(
+    Output("map-container", "style"),
+    Input("building-table", "selected_rows"),
+)
+def resize_map(selected_rows):
+
+    if selected_rows:
+        return {"width": "70%", "height": "100%"}
+    else:
+        return {"width": "100%", "height": "100%"}
 
 
 
