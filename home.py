@@ -3,20 +3,17 @@ import plotly.express as px
 import pandas as pd
 from navbar import create_navbar
 
-# =====================================================
-# Constants
-# =====================================================
+# COORDO DE GENEVE CENTRE
 GENEVA_CENTER = {"lat": 46.2044, "lon": 6.1432}
 
 nav = create_navbar()
 
-# =====================================================
-# Example buildings in Geneva
-# =====================================================
-df_buildings = pd.DataFrame({
-    "id": [0, 1, 2,3,4,5],
+# CHARGEMENT DES DONNEES ECRITES DANS UN FICHIER SOURCE
+#df_buildings = pd.read_json('Data_SE.json', orient='records')
 
-    # ---------- Identification ----------
+df_buildings = pd.DataFrame(
+{
+    "id": [0, 1, 2,3,4,5],
     "nom": [
         "L'Atelier",
         "TPG Bachet",
@@ -27,40 +24,48 @@ df_buildings = pd.DataFrame({
     "sre": [33350, 36614, 52909,25263,50000,50000],
     "affectations": ["Industrie 60%-Administration 30%-Commerces 10%",
                      "Dépôt TPG", "Centre commercial-Hôtel","Administration","Laboratoires","Logements"],
-
-    # ---------- Construction ----------
     "surface_enveloppe": [15587, 21189, 32478,32478,50000,50000],
     "type_construction": ["Mi-lourde", "légère", "légère","Mi-lourde","légère","Mi-lourde"],
-
-    # ---------- Chaud ----------
     "chaud_producteur": ["CAD Ziplo", "CAD SIG", "CCF gaz-Chaudière gaz-chaudière mazout","CAD SIG","CAD SIG","CAD SIG"],
     "chaud_puissance_installee_kW": [750, 2600, 2915,1500,3500,3500],
     "chaud_ratio_puiss_inst_W_m2": [17, 71, 55, 60, 60, 60],
     "chaud_puissance_max": [700, 2000, 1500, 1000, 1000, 1000],
-    "chaud_conso_annuelle": [921520, 2805000, 2815000, 1500000, 1500000, 1500000],
+    "chaud_conso_annuelle": [{"2023": 741000,"2024":720949,"2025":921520},
+                             {"2023": 2590000,"2024":2626000,"2025":2805000},
+                             {"2023": 2590000,"2024":2626000,"2025":2805000},
+                             {"2023": 2590000,"2024":2626000,"2025":2805000},
+                             {"2023": 2590000,"2024":2626000,"2025":2805000},
+                             {"2023": 2590000,"2024":2626000,"2025":2805000}],
     "chaud_ratio_conso": [27.6, 76.6, 53, 40, 40, 40],
     "chaud_type_emetteurs": ["ventilo-convecteurs", "ventilo-convecteurs-radiateurs-monoblocs",
                              "ventilo-convecteurs-radiateurs-monoblocs","ventilo-convecteurs","ventilo-convecteurs",
                              "planchers chauffants"],
-
-    # ---------- Froid ----------
     "froid_producteur": ["FAD Ziplo", "PAC aérotherme", "GF à vis","FAD SIG","FAD SIG"," "],
     "froid_puissance_installee_kW": [850, 315, 3800,2000,2000,0],
     "froid_ratio_surfacique_W_m2": [19.2, 0, 72,50,50,0],
     "froid_puissance_max": [500, 0, 2400,2000,2000,0],
-    "froid_conso_annuelle": [584330, 0, 2540000,1500000,1500000,0],
+    "froid_conso_annuelle": [{"2023": 584330,"2024":584330,"2025":584330},
+                             {"2023": 0,"2024":0,"2025":0},
+                             {"2023": 2540000,"2024":2540000,"2025":2540000},
+                             {"2023": 1500000,"2024":1500000,"2025":1500000},
+                             {"2023": 1500000,"2024":1500000,"2025":1500000},
+                             {"2023": 0,"2024":0,"2025":0}],
     "froid_ratio_conso": [17.5, 0, 48,48,48,0],
     "froid_type_emetteurs": ["ventilo-convecteurs", "ventilo-convecteurs-monoblocs",
                              "ventilo-convecteurs-monoblocs","ventilo-convecteurs","ventilo-convecteurs"," "],
-
-    # ---------- Map (Geneva) ----------
     "lat": [46.1658, 46.1750, 46.1803,46.2226,46.2221,46.1839],
     "lon": [6.1090, 6.1320, 6.1286,6.1460,6.1486,6.1445],
 })
 
-# =====================================================
-# Page layout
-# =====================================================
+df_display = df_buildings.copy()
+df_display["chaud_conso_annuelle"] = df_display["chaud_conso_annuelle"].apply(
+    lambda d: " / ".join(f"{k}: {v}" for k, v in d.items())
+)
+df_display["froid_conso_annuelle"] = df_display["froid_conso_annuelle"].apply(
+    lambda d: " / ".join(f"{k}: {v}" for k, v in d.items())
+)
+data=df_display.to_dict("records")
+
 def create_page_home():
     return html.Div(
         [
@@ -80,7 +85,7 @@ def create_page_home():
                         children=[
                             dash_table.DataTable(
                                 id="building-table",
-                                data=df_buildings.to_dict("records"),
+                                data=data,
                                 row_selectable="single",
                                 row_deletable=False,
                                 selected_rows=[],
@@ -207,6 +212,7 @@ def update_map(filtered_rows, selected_rows):
         size="chaud_puissance_installee_kW",
         hover_name="nom",
         custom_data=[
+            "id",
             "sre",
             "chaud_puissance_installee_kW",
             "chaud_ratio_puiss_inst_W_m2"
@@ -216,11 +222,19 @@ def update_map(filtered_rows, selected_rows):
     )
 
     fig.update_layout(
-        mapbox_style="open-street-map",
-        mapbox_center=center,
+        mapbox_style="white-bg",  # IMPORTANT
+        mapbox_layers=[
+            {
+                "below": "traces",
+                "sourcetype": "raster",
+                "source": [
+                    "https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-grau/default/current/3857/{z}/{x}/{y}.jpeg"
+                ],
+            }
+        ],
+        mapbox_center={"lat": 46.2044, "lon": 6.1432},
+        mapbox_zoom=13,
         margin={"l": 0, "r": 0, "t": 0, "b": 0},
-        showlegend=False,
-        separators=". "
     )
 
     # Highlight sélection
@@ -234,11 +248,10 @@ def update_map(filtered_rows, selected_rows):
         ),
         hovertemplate=
         "<b>%{hovertext}</b><br><br>" +
-        "SRE : %{customdata[0]:,.0f} m²<br>" +
-        "Puissance chaud installée : %{customdata[1]:,.0f} kW<br>" +
-        "Ratio chaud installé : %{customdata[2]:,.1f} W/m²<br>" +
+        "SRE : %{customdata[1]:,.0f} m²<br>" +
+        "Puissance chaud installée : %{customdata[2]:,.0f} kW<br>" +
+        "Ratio chaud installé : %{customdata[3]:,.1f} W/m²<br>" +
         "<extra></extra>"
-
     )
 
     return fig
@@ -260,32 +273,82 @@ def update_side_panel(selected_rows, rows):
             "overflow": "hidden",
         }
 
-    dff = pd.DataFrame(rows)
-    row = dff.iloc[selected_rows[0]]
+    dff_table = pd.DataFrame(rows)  # table data (for display only)
+    row_table = dff_table.iloc[selected_rows[0]]
 
-    # ✅ CONTENT
-    content = html.Div([
-        html.H3(row["nom"]),
-        html.Hr(),
+    # ✅ Use ID to retrieve clean data
+    row = df_buildings[df_buildings["id"] == row_table["id"]].iloc[0]
 
-        html.P(f"EGID: {row['egid']}"),
-        html.P(f"SRE: {row['sre']:,} m²".replace(",", " ")),
-        html.P(f"Affectation: {row['affectations']}"),
+    # Prepa du graphes des consos
+    conso_dict_CH = row["chaud_conso_annuelle"]
+    conso_dict_FR = row["froid_conso_annuelle"]
+    df_conso = pd.DataFrame({
+        "Année": list(conso_dict_CH.keys()),
+        "Consommation_CH": list(conso_dict_CH.values()),
+        "Consommation_FR": list(conso_dict_FR.values())
+    })
 
-        html.H4("Chaud"),
-        html.P(f"Producteur: {row['chaud_producteur']}"),
-        html.P(f"Puissance installée: {row['chaud_puissance_installee_kW']:,} kW".replace(",", " ")),
-        html.P(f"Ratio: {row['chaud_ratio_puiss_inst_W_m2']} W/m²"),
-        html.P(f"Conso annuelle: {row['chaud_conso_annuelle']:,} kWh".replace(",", " ")),
+    fig_conso_ch = px.bar(
+        df_conso,
+        x="Année",
+        y="Consommation_CH",
+        title="Conso annuelle (kWh)",color_discrete_sequence=["#C00000"]
+    )
+    fig_conso_ch.update_layout(
+        margin=dict(l=10, r=10, t=40, b=10),
+        height=250
+    )
 
-        html.H4("Froid"),
-        html.P(f"Producteur: {row['froid_producteur']}"),
-        html.P(f"Puissance installée: {row['froid_puissance_installee_kW']:,} kW".replace(",", " ")),
-    ])
+    # Graphes si présence de froid
+    if row['froid_puissance_installee_kW'] > 0:
+        fig_conso_fr = px.bar(
+            df_conso,
+            x="Année",
+            y="Consommation_FR",
+            title="Conso annuelle (kWh)", color_discrete_sequence=["#00B0F0"]
+        )
+        fig_conso_fr.update_layout(
+            margin=dict(l=10, r=10, t=40, b=10),
+            height=250
+        )
+        content = html.Div([
+            html.H3(row["nom"]),
+            html.Hr(),
+            html.P(f"EGID: {row['egid']}"),
+            html.P(f"SRE: {row['sre']:,} m²".replace(",", " ")),
+            html.P(f"Affectation: {row['affectations']}"),
+            html.H4("Chaud", style={"color": "#C00000"}),
+            html.P(f"Producteur: {row['chaud_producteur']}"),
+            html.P(f"Puissance installée: {row['chaud_puissance_installee_kW']:,} kW".replace(",", " ")),
+            html.P(f"Ratio: {row['chaud_ratio_puiss_inst_W_m2']} W/m²"),
+            # Graphe des consos
+            dcc.Graph(figure=fig_conso_ch),
+            html.H4("Froid", style={"color": "#00B0F0"}),
+            html.P(f"Producteur: {row['froid_producteur']}"),
+            html.P(f"Puissance installée: {row['froid_puissance_installee_kW']:,} kW".replace(",", " ")),
+            dcc.Graph(figure=fig_conso_fr)
+        ])
+    else:
+        content = html.Div([
+            html.H3(row["nom"]),
+            html.Hr(),
+            html.P(f"EGID: {row['egid']}"),
+            html.P(f"SRE: {row['sre']:,} m²".replace(",", " ")),
+            html.P(f"Affectation: {row['affectations']}"),
+            html.H4("Chaud", style={"color": "#C00000"}),
+            html.P(f"Producteur: {row['chaud_producteur']}"),
+            html.P(f"Puissance installée: {row['chaud_puissance_installee_kW']:,} kW".replace(",", " ")),
+            html.P(f"Ratio: {row['chaud_ratio_puiss_inst_W_m2']} W/m²"),
+            # Graphe des consos
+            dcc.Graph(figure=fig_conso_ch),
+            html.H4("Froid", style={"color": "#00B0F0"}),
+            html.P(f"Producteur: {row['froid_producteur']}"),
+            html.P(f"Puissance installée: {row['froid_puissance_installee_kW']:,} kW".replace(",", " "))
+        ])
 
     # ✅ SHOW panel
     style = {
-        "width": "30%",
+        "width": "40%",
         "transition": "0.3s",
         "overflowY": "auto",
         "backgroundColor": "#f9f9f9",
@@ -303,11 +366,9 @@ def update_side_panel(selected_rows, rows):
 def resize_map(selected_rows):
 
     if selected_rows:
-        return {"width": "70%", "height": "100%"}
+        return {"width": "60%", "height": "100%"}
     else:
         return {"width": "100%", "height": "100%"}
-
-
 
 @callback(
     Output("building-table", "selected_rows"),
