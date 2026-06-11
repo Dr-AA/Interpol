@@ -22,7 +22,7 @@ df_buildings = pd.DataFrame(
     ],
     "egid": ["295165454", "2040608", "295020439","295161133","295020439","295020439"],
     "sre": [33350, 36614, 52909,25263,50000,50000],
-    "affectations": ["Industrie 60%-Administration 30%-Commerces 10%",
+    "affectations": ["Industrie 60% ; Administration 30% ; Commerces 10%",
                      "Dépôt TPG", "Centre commercial-Hôtel","Administration","Laboratoires","Logements"],
     "surface_enveloppe": [15587, 21189, 32478,32478,50000,50000],
     "type_construction": ["Mi-lourde", "légère", "légère","Mi-lourde","légère","Mi-lourde"],
@@ -66,6 +66,21 @@ df_display["froid_conso_annuelle"] = df_display["froid_conso_annuelle"].apply(
 )
 data=df_display.to_dict("records")
 
+
+CARD_STYLE = {
+    "backgroundColor": "white",
+    "borderRadius": "12px",
+    "boxShadow": "0 4px 12px rgba(0,0,0,0.08)",
+    "padding": "10px",
+}
+
+TITLE_STYLE = {
+    "fontWeight": "600",
+    "fontSize": "16px",
+    "marginBottom": "5px"
+}
+
+
 def create_page_home():
     return html.Div(
         [
@@ -80,77 +95,93 @@ def create_page_home():
                 children=[
 
                     # ================== TABLE ==================
-                    html.Div(
-                        style={"height": "40%", "padding": "10px"},
-                        children=[
-                            dash_table.DataTable(
-                                id="building-table",
-                                data=data,
-                                row_selectable="single",
-                                row_deletable=False,
-                                selected_rows=[],
-                                active_cell=None,
-                                filter_action="native",
-                                sort_action="native",
-                                page_action="none",
-                                merge_duplicate_headers=True,
+                    html.Div([
+                        html.Div("🏢 Listing des sites", style=TITLE_STYLE),
 
-                                columns=[
-                                    {"name": ["", "Nom"], "id": "nom"},
-                                    {"name": ["", "EGID"], "id": "egid"},
-                                    {"name": ["", "SRE"], "id": "sre"},
-                                    {"name": ["", "Affectations"], "id": "affectations"},
-                                    {"name": ["", "Surface enveloppe"], "id": "surface_enveloppe"},
-                                    {"name": ["", "Type Construction"], "id": "type_construction"},
+                        dash_table.DataTable(
 
-                                    {"name": ["Chaud", "Producteur"], "id": "chaud_producteur"},
-                                    {"name": ["Chaud", "Puissance Installée (kW)"], "id": "chaud_puissance_installee_kW"},
-                                    {"name": ["Chaud", "Ratio Surfacique – Puiss Instal"], "id": "chaud_ratio_puiss_inst_W_m2"},
-                                    {"name": ["Chaud", "Puissance Max atteinte"], "id": "chaud_puissance_max"},
-                                    {"name": ["Chaud", "Conso Annuelle"], "id": "chaud_conso_annuelle"},
-                                    {"name": ["Chaud", "Ratio Surf conso"], "id": "chaud_ratio_conso"},
-                                    {"name": ["Chaud", "Type émetteurs"], "id": "chaud_type_emetteurs"},
+                            id="building-table",
+                            data=data,
+                            row_selectable="single",
+                            row_deletable=False,
+                            selected_rows=[],
+                            active_cell=None,
+                            filter_action="native",
+                            sort_action="native",
+                            page_action="none",
+                            merge_duplicate_headers=True,
 
-                                    {"name": ["Froid", "Producteur"], "id": "froid_producteur"},
-                                    {"name": ["Froid", "Puissance Installée (kW)"], "id": "froid_puissance_installee_kW"},
-                                    {"name": ["Froid", "Ratio Surfacique"], "id": "froid_ratio_surfacique_W_m2"},
-                                    {"name": ["Froid", "Puissance Max atteinte"], "id": "froid_puissance_max"},
-                                    {"name": ["Froid", "Conso Annuelle"], "id": "froid_conso_annuelle"},
-                                    {"name": ["Froid", "Ratio Surf conso"], "id": "froid_ratio_conso"},
-                                    {"name": ["Froid", "Type émetteurs"], "id": "froid_type_emetteurs"},
-                                ],
+                            columns=[
+                                {"name": ["", "Nom"], "id": "nom"},
+                                {"name": ["", "EGID"], "id": "egid"},
+                                {"name": ["", "SRE"], "id": "sre"},
+                                {"name": ["", "Affectations"], "id": "affectations"},
+                                {"name": ["", "Surface enveloppe"], "id": "surface_enveloppe"},
+                                {"name": ["", "Type Construction"], "id": "type_construction"},
 
-                                style_data_conditional=[
-                                   {
-                                        "if": {"state": "selected"},
-                                        "backgroundColor": "#d6eaff",
-                                    },
-                                ],
+                                {"name": ["Chaud", "Producteur"], "id": "chaud_producteur"},
+                                {"name": ["Chaud", "Puissance Installée (kW)"], "id": "chaud_puissance_installee_kW"},
+                                {"name": ["Chaud", "Ratio Surfacique – Puiss Instal"],
+                                 "id": "chaud_ratio_puiss_inst_W_m2"},
+                                {"name": ["Chaud", "Puissance Max atteinte"], "id": "chaud_puissance_max"},
+                                {"name": ["Chaud", "Conso Annuelle"], "id": "chaud_conso_annuelle"},
+                                {"name": ["Chaud", "Ratio Surf conso"], "id": "chaud_ratio_conso"},
+                                {"name": ["Chaud", "Type émetteurs"], "id": "chaud_type_emetteurs"},
 
-                                style_table={
-                                    "height": "100%",
-                                    "overflowX": "auto",
-                                    "overflowY": "auto",
-                                },
-                                style_cell={
-                                    "padding": "6px",
-                                    "textAlign": "center",
-                                },
-                                style_header={
-                                    "fontWeight": "bold",
-                                    "textAlign": "center",
-                                },
-                            )
-                        ],
-                    ),
+                                {"name": ["Froid", "Producteur"], "id": "froid_producteur"},
+                                {"name": ["Froid", "Puissance Installée (kW)"], "id": "froid_puissance_installee_kW"},
+                                {"name": ["Froid", "Ratio Surfacique"], "id": "froid_ratio_surfacique_W_m2"},
+                                {"name": ["Froid", "Puissance Max atteinte"], "id": "froid_puissance_max"},
+                                {"name": ["Froid", "Conso Annuelle"], "id": "froid_conso_annuelle"},
+                                {"name": ["Froid", "Ratio Surf conso"], "id": "froid_ratio_conso"},
+                                {"name": ["Froid", "Type émetteurs"], "id": "froid_type_emetteurs"},
+                            ],
+
+                            # ✅ IMPORTANT: table scrolls INSIDE
+                            style_table={
+                                "height": "100%",
+                                "maxHeight": "100%",
+                                "overflowY": "auto",
+                                "overflowX": "auto",
+                            },
+
+                            # ✅ compact rows so more fit
+                            style_cell={
+                                "padding": "6px",
+                                "fontSize": "11px",
+                                "textAlign": "center",
+                                "minWidth": "100px",
+                                "whiteSpace": "normal",
+                            },
+
+                            # ✅ sticky header ("ascenseur" feeling 👍)
+                            fixed_rows={"headers": True},
+
+                            style_header={
+                                "backgroundColor": "#f4f6f8",
+                                "fontWeight": "600",
+                            },
+
+                            style_data_conditional=[
+                                {"if": {"row_index": "odd"}, "backgroundColor": "#fafafa"},
+                                {"if": {"state": "selected"}, "backgroundColor": "#cce5ff"},
+                            ],
+                        ),
+
+                    ], style={
+                        **CARD_STYLE,
+
+                        # ✅ CRITICAL FIX
+                        "flex": "0 0 40%",  # FIXED HEIGHT RATIO
+                        "display": "flex",
+                        "flexDirection": "column",
+                        "overflow": "hidden"  # prevents overlap
+                    }),
 
                     # ================== PANEL AND MAP ==================
 
                     html.Div(
-                        style={
-                            "height": "60%",
-                            "display": "flex",
-                        },
+
                         children=[
 
                             # SIDE PANEL
@@ -176,8 +207,16 @@ def create_page_home():
                                 ],
                             ),
                         ],
+                        style={
+                            **CARD_STYLE,
+
+                            # ✅ CRITICAL FIX
+                            "flex": "0 0 60%",  # FIXED HEIGHT RATIO
+                            "display": "flex",
+                            "overflow": "hidden"  # prevents overlap
+                        }
                     )
-                    ,
+
                 ],
             ),
         ],
@@ -222,16 +261,8 @@ def update_map(filtered_rows, selected_rows):
     )
 
     fig.update_layout(
-        mapbox_style="white-bg",  # IMPORTANT
-        mapbox_layers=[
-            {
-                "below": "traces",
-                "sourcetype": "raster",
-                "source": [
-                    "https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-grau/default/current/3857/{z}/{x}/{y}.jpeg"
-                ],
-            }
-        ],
+        mapbox_style="open-street-map",  # IMPORTANT
+
         mapbox_center={"lat": 46.2044, "lon": 6.1432},
         mapbox_zoom=13,
         margin={"l": 0, "r": 0, "t": 0, "b": 0},
@@ -292,11 +323,48 @@ def update_side_panel(selected_rows, rows):
         df_conso,
         x="Année",
         y="Consommation_CH",
-        title="Conso annuelle (kWh)",color_discrete_sequence=["#C00000"]
+        title="Consommation annuelle - Chauffage (kWh)",
+        text="Consommation_CH",
+        color_discrete_sequence=["#C00000"]
     )
+
+    fig_conso_ch.update_traces(
+        texttemplate="%{text:,.0f}",  # format numbers
+        textposition="outside",
+        marker=dict(
+            line=dict(width=1.5, color="white")  # nice separation
+        )
+    )
+
     fig_conso_ch.update_layout(
+        height=260,
         margin=dict(l=10, r=10, t=40, b=10),
-        height=250
+
+        # cleaner background
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+
+        # title styling
+        title=dict(
+            x=0.02,
+            xanchor="left",
+            font=dict(size=14)
+        ),
+
+        # axes
+        xaxis=dict(
+            title=None,
+            showgrid=False
+        ),
+
+        yaxis=dict(
+            title="kWh",
+            gridcolor="#e6e6e6",
+            zeroline=False
+        ),
+
+        # remove legend (only one series)
+        showlegend=False
     )
 
     # Graphes si présence de froid
@@ -312,39 +380,58 @@ def update_side_panel(selected_rows, rows):
             height=250
         )
         content = html.Div([
-            html.H3(row["nom"]),
-            html.Hr(),
-            html.P(f"EGID: {row['egid']}"),
-            html.P(f"SRE: {row['sre']:,} m²".replace(",", " ")),
-            html.P(f"Affectation: {row['affectations']}"),
-            html.H4("Chaud", style={"color": "#C00000"}),
-            html.P(f"Producteur: {row['chaud_producteur']}"),
-            html.P(f"Puissance installée: {row['chaud_puissance_installee_kW']:,} kW".replace(",", " ")),
-            html.P(f"Ratio: {row['chaud_ratio_puiss_inst_W_m2']} W/m²"),
-            # Graphe des consos
-            dcc.Graph(figure=fig_conso_ch),
-            html.H4("Froid", style={"color": "#00B0F0"}),
-            html.P(f"Producteur: {row['froid_producteur']}"),
-            html.P(f"Puissance installée: {row['froid_puissance_installee_kW']:,} kW".replace(",", " ")),
-            dcc.Graph(figure=fig_conso_fr)
-        ])
+
+            html.H2(row["nom"]),
+            html.P(f"EGID: {row['egid']}", style={"color": "gray"}),
+
+            html.P(f"SRE: {row['sre']:,} m²".replace(",", " "), style={"color": "gray"}),
+            html.P(f"Affectation: {row['affectations']}", style={"color": "gray"}),
+
+            html.Div([
+                html.H4("🔥 Chaud", style={"color": "#C00000"}),
+                html.P(f"Producteur: {row['chaud_producteur']}"),
+                html.P(f"Puissance installée: {row['chaud_puissance_installee_kW']:,} kW".replace(",", " ")),
+                html.P(f"Ratio puissance installée: {row['chaud_ratio_puiss_inst_W_m2']} W/m²"),
+                # Graphe des consos
+                dcc.Graph(figure=fig_conso_ch),
+            ], style={"flex": "1"}),
+
+            html.Div([
+                html.H4("❄️ Froid", style={"color": "#00B0F0"}),
+                html.P(f"Producteur: {row['froid_producteur']}"),
+                html.P(f"Puissance installée: {row['froid_puissance_installee_kW']:,} kW".replace(",", " ")),
+                dcc.Graph(figure=fig_conso_fr)
+            ], style={"flex": "1"}),
+
+            ],style={**CARD_STYLE}
+        )
     else:
         content = html.Div([
-            html.H3(row["nom"]),
-            html.Hr(),
-            html.P(f"EGID: {row['egid']}"),
-            html.P(f"SRE: {row['sre']:,} m²".replace(",", " ")),
-            html.P(f"Affectation: {row['affectations']}"),
-            html.H4("Chaud", style={"color": "#C00000"}),
-            html.P(f"Producteur: {row['chaud_producteur']}"),
-            html.P(f"Puissance installée: {row['chaud_puissance_installee_kW']:,} kW".replace(",", " ")),
-            html.P(f"Ratio: {row['chaud_ratio_puiss_inst_W_m2']} W/m²"),
-            # Graphe des consos
-            dcc.Graph(figure=fig_conso_ch),
-            html.H4("Froid", style={"color": "#00B0F0"}),
-            html.P(f"Producteur: {row['froid_producteur']}"),
-            html.P(f"Puissance installée: {row['froid_puissance_installee_kW']:,} kW".replace(",", " "))
-        ])
+
+            html.H2(row["nom"]),
+            html.P(f"EGID: {row['egid']}", style={"color": "gray"}),
+
+            html.P(f"SRE: {row['sre']:,} m²".replace(",", " "), style={"color": "gray"}),
+            html.P(f"Affectation: {row['affectations']}", style={"color": "gray"}),
+
+            html.Div([
+                html.H4("🔥 Chaud", style={"color": "#C00000"}),
+                html.P(f"Producteur: {row['chaud_producteur']}"),
+                html.P(f"Puissance installée: {row['chaud_puissance_installee_kW']:,} kW".replace(",", " ")),
+                html.P(f"Ratio puissance installée: {row['chaud_ratio_puiss_inst_W_m2']} W/m²"),
+                # Graphe des consos
+                dcc.Graph(figure=fig_conso_ch),
+            ], style={"flex": "1"}),
+
+            html.Div([
+                html.H4("❄️ Froid", style={"color": "#00B0F0"}),
+                html.P(f"Producteur: {row['froid_producteur']}"),
+                html.P(f"Puissance installée: {row['froid_puissance_installee_kW']:,} kW".replace(",", " "))
+
+            ], style={"flex": "1"}),
+
+        ], style={**CARD_STYLE}
+        )
 
     # ✅ SHOW panel
     style = {
