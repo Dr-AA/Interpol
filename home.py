@@ -80,7 +80,6 @@ TITLE_STYLE = {
     "marginBottom": "5px"
 }
 
-
 def create_page_home():
     return html.Div(
         [
@@ -93,13 +92,10 @@ def create_page_home():
                     "flexDirection": "column",
                 },
                 children=[
-
                     # ================== TABLE ==================
                     html.Div([
                         html.Div("🏢 Listing des sites", style=TITLE_STYLE),
-
                         dash_table.DataTable(
-
                             id="building-table",
                             data=data,
                             row_selectable="single",
@@ -109,8 +105,7 @@ def create_page_home():
                             filter_action="native",
                             sort_action="native",
                             page_action="none",
-                            merge_duplicate_headers=True,
-
+                            merge_duplicate_headers=True,  # Enable merged headers
                             columns=[
                                 {"name": ["", "Nom"], "id": "nom"},
                                 {"name": ["", "EGID"], "id": "egid"},
@@ -119,33 +114,29 @@ def create_page_home():
                                 {"name": ["", "Surface enveloppe"], "id": "surface_enveloppe"},
                                 {"name": ["", "Type Construction"], "id": "type_construction"},
 
-                                {"name": ["Chaud", "Producteur"], "id": "chaud_producteur"},
-                                {"name": ["Chaud", "Puissance Installée (kW)"], "id": "chaud_puissance_installee_kW"},
-                                {"name": ["Chaud", "Ratio Surfacique – Puiss Instal"],
+                                {"name": ["CHAUD", "Producteur"], "id": "chaud_producteur"},
+                                {"name": ["CHAUD", "Puissance Installée (kW)"], "id": "chaud_puissance_installee_kW"},
+                                {"name": ["CHAUD", "Ratio Surfacique – Puiss Instal"],
                                  "id": "chaud_ratio_puiss_inst_W_m2"},
-                                {"name": ["Chaud", "Puissance Max atteinte"], "id": "chaud_puissance_max"},
-                                {"name": ["Chaud", "Conso Annuelle"], "id": "chaud_conso_annuelle"},
-                                {"name": ["Chaud", "Ratio Surf conso"], "id": "chaud_ratio_conso"},
-                                {"name": ["Chaud", "Type émetteurs"], "id": "chaud_type_emetteurs"},
+                                {"name": ["CHAUD", "Puissance Max atteinte"], "id": "chaud_puissance_max"},
+                                {"name": ["CHAUD", "Conso Annuelle"], "id": "chaud_conso_annuelle"},
+                                {"name": ["CHAUD", "Ratio Surf conso"], "id": "chaud_ratio_conso"},
+                                {"name": ["CHAUD", "Type émetteurs"], "id": "chaud_type_emetteurs"},
 
-                                {"name": ["Froid", "Producteur"], "id": "froid_producteur"},
-                                {"name": ["Froid", "Puissance Installée (kW)"], "id": "froid_puissance_installee_kW"},
-                                {"name": ["Froid", "Ratio Surfacique"], "id": "froid_ratio_surfacique_W_m2"},
-                                {"name": ["Froid", "Puissance Max atteinte"], "id": "froid_puissance_max"},
-                                {"name": ["Froid", "Conso Annuelle"], "id": "froid_conso_annuelle"},
-                                {"name": ["Froid", "Ratio Surf conso"], "id": "froid_ratio_conso"},
-                                {"name": ["Froid", "Type émetteurs"], "id": "froid_type_emetteurs"},
+                                {"name": ["FROID", "Producteur"], "id": "froid_producteur"},
+                                {"name": ["FROID", "Puissance Installée (kW)"], "id": "froid_puissance_installee_kW"},
+                                {"name": ["FROID", "Ratio Surfacique"], "id": "froid_ratio_surfacique_W_m2"},
+                                {"name": ["FROID", "Puissance Max atteinte"], "id": "froid_puissance_max"},
+                                {"name": ["FROID", "Conso Annuelle"], "id": "froid_conso_annuelle"},
+                                {"name": ["FROID", "Ratio Surf conso"], "id": "froid_ratio_conso"},
+                                {"name": ["FROID", "Type émetteurs"], "id": "froid_type_emetteurs"},
                             ],
-
-                            # ✅ IMPORTANT: table scrolls INSIDE
                             style_table={
                                 "height": "100%",
                                 "maxHeight": "100%",
                                 "overflowY": "auto",
                                 "overflowX": "auto",
                             },
-
-                            # ✅ compact rows so more fit
                             style_cell={
                                 "padding": "6px",
                                 "fontSize": "11px",
@@ -153,15 +144,45 @@ def create_page_home():
                                 "minWidth": "100px",
                                 "whiteSpace": "normal",
                             },
-
-                            # ✅ sticky header ("ascenseur" feeling 👍)
-                            fixed_rows={"headers": True},
-
                             style_header={
                                 "backgroundColor": "#f4f6f8",
                                 "fontWeight": "600",
+                                "border": "1px solid #e0e0e0",
                             },
+                            # Add custom header conditional styling here
+                            style_header_conditional=[
+                                # Style "Chaud" merged header
+                                {
+                                    "if": {"column_id": ["chaud_producteur","chaud_puissance_installee_kW",
+                                           "chaud_ratio_puiss_inst_W_m2","chaud_puissance_max","chaud_conso_annuelle",
+                                           "chaud_ratio_conso","chaud_type_emetteurs"]},  # First column under "Chaud"
+                                    "backgroundColor": "rgba(204, 0, 0, 0.8)",  # Red background
+                                    "color": "white",  # White text for contrast
+                                    "fontWeight": "bold",
+                                    "border": "1px solid black",  # Optional: Red border
+                                },
+                                {
+                                    "if": {"column_id": ["froid_producteur", "froid_puissance_installee_kW",
+                                                         "froid_ratio_surfacique_W_m2", "froid_puissance_max",
+                                                         "froid_conso_annuelle",
+                                                         "froid_ratio_conso", "froid_type_emetteurs"]},
+                                    "backgroundColor": "rgba(0, 128, 255, 0.8)",  # Red background
+                                    "color": "white",  # White text for contrast
+                                    "fontWeight": "bold",
+                                    "border": "1px solid black",  # Optional: Red border
+                                },
+                                {
+                                    "if": {"column_id": ["nom", "egid",
+                                                         "sre", "affectations",
+                                                         "surface_enveloppe",
+                                                         "type_construction"]},
+                                    "backgroundColor": "rgba(119, 118, 118, 0.8)",  # Red background
+                                    "color": "white",  # White text for contrast
+                                    "fontWeight": "bold",
+                                    "border": "1px solid black",  # Optional: Red border
+                                },
 
+                            ],
                             style_data_conditional=[
                                 {"if": {"row_index": "odd"}, "backgroundColor": "#fafafa"},
                                 {"if": {"state": "selected"}, "backgroundColor": "#cce5ff"},
@@ -170,20 +191,15 @@ def create_page_home():
 
                     ], style={
                         **CARD_STYLE,
-
                         # ✅ CRITICAL FIX
                         "flex": "0 0 40%",  # FIXED HEIGHT RATIO
                         "display": "flex",
                         "flexDirection": "column",
                         "overflow": "hidden"  # prevents overlap
                     }),
-
                     # ================== PANEL AND MAP ==================
-
                     html.Div(
-
                         children=[
-
                             # SIDE PANEL
                             html.Div(
                                 id="side-panel",
@@ -197,7 +213,6 @@ def create_page_home():
                                 },
                                 children=[]
                             ),
-
                             # MAP
                             html.Div(
                                 id="map-container",
@@ -336,7 +351,7 @@ def update_side_panel(selected_rows, rows):
     # Styles pour le texte dans le panneau
     style_side_panel_text = {
         "fontSize": "13px",  # Taille réduite d'1 point
-        "lineHeight": "1.4",  # Espacement entre lignes
+        "lineHeight": "1.2",  # Espacement entre lignes
         "color": "#1f388b",  # Uniformiser la couleur
     }
 
@@ -395,7 +410,7 @@ def update_side_panel(selected_rows, rows):
     content = html.Div(
         children=[
             # Titre du site
-            html.H1(row["nom"], style={"fontSize": "15px", "fontWeight": "bold"}),  # Reduced overall size
+            html.H1(row["nom"], style={"fontSize": "24px", "fontWeight": "bold","textAlign": "center"}),  # Reduced overall size
             html.P(
                 [html.Strong("EGID: "), row["egid"]],  # Bold EGID label
                 style=style_side_panel_text
@@ -411,7 +426,7 @@ def update_side_panel(selected_rows, rows):
 
             # Carte sur Chaud
             html.Div([
-                html.H4("🔥 Chaud", style={"color": "#C00000", "fontSize": "13px"}),  # Theme-specific heading
+                html.H4("🔥 Chaud", style={"color": "#C00000", "fontSize": "17px"}),  # Theme-specific heading
                 html.P(
                     [html.Strong("Producteur: "), row["chaud_producteur"]],
                     style=style_side_panel_text
@@ -433,7 +448,7 @@ def update_side_panel(selected_rows, rows):
 
             # Carte sur Froid (only shown if data is available)
             html.Div([
-                html.H4("❄️ Froid", style={"color": "#00B0F0", "fontSize": "13px"}),  # Theme-specific heading
+                html.H4("❄️ Froid", style={"color": "#00B0F0", "fontSize": "17px"}),  # Theme-specific heading
                 html.P(
                     [html.Strong("Producteur: "), row["froid_producteur"]],
                     style=style_side_panel_text
