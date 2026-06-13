@@ -227,23 +227,47 @@ def create_page_home():
 # Callbacks
 # =====================================================
 
+from dash import callback, Input, Output, State
+import plotly.express as px
+import pandas as pd
+
+
 @callback(
     Output("building-map", "figure"),
-    Input("building-table", "derived_virtual_data"),
-    Input("building-table", "selected_rows"),
+    Input("building-table", "selected_rows"),  # Table selection
+    Input("building-map", "clickData"),  # Map click
+    State("building-table", "derived_virtual_data"),  # Current filtered rows from table
+    State("building-map", "figure"),  # Current map figure state
 )
-def update_map(filtered_rows, selected_rows):
+def update_map(selected_rows, click_data, filtered_rows, current_map_fig):
+    """
+    Callback to update the map's center when either a row is selected or a point is clicked.
+    """
 
-    dff = df_buildings if filtered_rows is None else pd.DataFrame(filtered_rows)
+    # DataFrame from DataTable or fallback to full dataset if none
+    dff = pd.DataFrame(filtered_rows) if filtered_rows else df_buildings
+
+    # Default to Geneva Center if no selection is made
     center = GENEVA_CENTER
-
     selected_id = None
 
+    # Handle table row selection
     if selected_rows:
-        row = dff.iloc[selected_rows[0]]
-        selected_id = row["id"]
-        center = {"lat": row["lat"], "lon": row["lon"]}
+        try:
+            selected_row = dff.iloc[selected_rows[0]]  # Get first selected row
+            center = {"lat": selected_row["lat"], "lon": selected_row["lon"]}
+            selected_id = selected_row["id"]
+        except IndexError:
+            pass  # In case selected_rows is out of sync
 
+    # Handle map click selection
+    if click_data:
+        clicked_id = click_data["points"][0]["customdata"][0]  # Extract ID from clicked point
+        clicked_row = dff[dff["id"] == clicked_id].iloc[0]
+        center = {"lat": clicked_row["lat"], "lon": clicked_row["lon"]}
+        selected_id = clicked_id
+
+    # Create the map figure
     fig = px.scatter_mapbox(
         dff,
         lat="lat",
@@ -255,20 +279,19 @@ def update_map(filtered_rows, selected_rows):
             "sre",
             "chaud_puissance_installee_kW",
             "chaud_ratio_puiss_inst_W_m2"
-        ]
-        ,
+        ],
         zoom=13,
     )
 
+    # Update map layout with new center and zoom
     fig.update_layout(
-        mapbox_style="open-street-map",  # IMPORTANT
-
-        mapbox_center={"lat": 46.2044, "lon": 6.1432},
-        mapbox_zoom=13,
+        mapbox_style="open-street-map",
+        mapbox_center=center,  # Center updated dynamically
+        mapbox_zoom=14,
         margin={"l": 0, "r": 0, "t": 0, "b": 0},
     )
 
-    # Highlight sélection
+    # Highlight the point corresponding to the selection
     fig.update_traces(
         marker=dict(
             sizemin=10,
@@ -277,15 +300,17 @@ def update_map(filtered_rows, selected_rows):
                 for i in dff["id"]
             ]
         ),
-        hovertemplate=
-        "<b>%{hovertext}</b><br><br>" +
-        "SRE : %{customdata[1]:,.0f} m²<br>" +
-        "Puissance chaud installée : %{customdata[2]:,.0f} kW<br>" +
-        "Ratio chaud installé : %{customdata[3]:,.1f} W/m²<br>" +
-        "<extra></extra>"
+        hovertemplate=(
+            "<b>%{hovertext}</b><br><br>"
+            "SRE: %{customdata[1]:,.0f} m²<br>"
+            "Puissance chaud installée: %{customdata[2]:,.0f} kW<br>"
+            "Ratio chaud installé: %{customdata[3]:,.1f} W/m²<br>"
+            "<extra></extra>"
+        ),
     )
 
     return fig
+
 
 
 @callback(
@@ -295,22 +320,33 @@ def update_map(filtered_rows, selected_rows):
     State("building-table", "derived_virtual_data"),
 )
 def update_side_panel(selected_rows, rows):
-
     if not selected_rows or rows is None:
-        # ✅ HIDE panel
+        # ✅ HIDE SIDE PANEL (par défaut)
         return [], {
             "width": "0%",
             "transition": "0.3s",
             "overflow": "hidden",
         }
 
-    dff_table = pd.DataFrame(rows)  # table data (for display only)
+    # Récupérer les données de la ligne sélectionnée
+    dff_table = pd.DataFrame(rows)
     row_table = dff_table.iloc[selected_rows[0]]
-
-    # ✅ Use ID to retrieve clean data
     row = df_buildings[df_buildings["id"] == row_table["id"]].iloc[0]
 
-    # Prepa du graphes des consos
+    # Styles pour le texte dans le panneau
+    style_side_panel_text = {
+        "fontSize": "13px",  # Taille réduite d'1 point
+        "lineHeight": "1.4",  # Espacement entre lignes
+        "color": "#1f388b",  # Uniformiser la couleur
+    }
+
+    # Style du conteneur pour recentrer et limiter la largeur des graphiques
+    graph_container_style = {
+        "maxWidth": "90%",  # 🔄 Réduit la largeur des graphiques à 90% de la largeur du panel
+        "margin": "0 auto",  # 🔄 Centre horizontalement
+    }
+
+    # Préparer le graphique pour les consommations
     conso_dict_CH = row["chaud_conso_annuelle"]
     conso_dict_FR = row["froid_conso_annuelle"]
     df_conso = pd.DataFrame({
@@ -319,6 +355,7 @@ def update_side_panel(selected_rows, rows):
         "Consommation_FR": list(conso_dict_FR.values())
     })
 
+    # Graphe des consommations de chauffage
     fig_conso_ch = px.bar(
         df_conso,
         x="Année",
@@ -327,123 +364,113 @@ def update_side_panel(selected_rows, rows):
         text="Consommation_CH",
         color_discrete_sequence=["#C00000"]
     )
-
-    fig_conso_ch.update_traces(
-        texttemplate="%{text:,.0f}",  # format numbers
-        textposition="outside",
-        marker=dict(
-            line=dict(width=1.5, color="white")  # nice separation
-        )
-    )
-
     fig_conso_ch.update_layout(
-        height=260,
+        height=220,  # 🔄 Réduction de la hauteur
         margin=dict(l=10, r=10, t=40, b=10),
-
-        # cleaner background
         plot_bgcolor="white",
         paper_bgcolor="white",
-
-        # title styling
-        title=dict(
-            x=0.02,
-            xanchor="left",
-            font=dict(size=14)
-        ),
-
-        # axes
-        xaxis=dict(
-            title=None,
-            showgrid=False
-        ),
-
-        yaxis=dict(
-            title="kWh",
-            gridcolor="#e6e6e6",
-            zeroline=False
-        ),
-
-        # remove legend (only one series)
-        showlegend=False
+        yaxis=dict(title=None),  # Supprimer le titre de l'axe Y
     )
 
-    # Graphes si présence de froid
-    if row['froid_puissance_installee_kW'] > 0:
+    # Graphe des consommations de refroidissement
+    fig_conso_fr = None
+    if row["froid_puissance_installee_kW"] > 0:
         fig_conso_fr = px.bar(
             df_conso,
             x="Année",
             y="Consommation_FR",
-            title="Conso annuelle (kWh)", color_discrete_sequence=["#00B0F0"]
+            title="Consommation annuelle - Froid (kWh)",
+            text="Consommation_FR",
+            color_discrete_sequence=["#00B0F0"]
         )
         fig_conso_fr.update_layout(
+            height=220,  # 🔄 Réduction de la hauteur
             margin=dict(l=10, r=10, t=40, b=10),
-            height=250
-        )
-        content = html.Div([
-
-            html.H2(row["nom"]),
-            html.P(f"EGID: {row['egid']}", style={"color": "gray"}),
-
-            html.P(f"SRE: {row['sre']:,} m²".replace(",", " "), style={"color": "gray"}),
-            html.P(f"Affectation: {row['affectations']}", style={"color": "gray"}),
-
-            html.Div([
-                html.H4("🔥 Chaud", style={"color": "#C00000"}),
-                html.P(f"Producteur: {row['chaud_producteur']}"),
-                html.P(f"Puissance installée: {row['chaud_puissance_installee_kW']:,} kW".replace(",", " ")),
-                html.P(f"Ratio puissance installée: {row['chaud_ratio_puiss_inst_W_m2']} W/m²"),
-                # Graphe des consos
-                dcc.Graph(figure=fig_conso_ch),
-            ], style={"flex": "1"}),
-
-            html.Div([
-                html.H4("❄️ Froid", style={"color": "#00B0F0"}),
-                html.P(f"Producteur: {row['froid_producteur']}"),
-                html.P(f"Puissance installée: {row['froid_puissance_installee_kW']:,} kW".replace(",", " ")),
-                dcc.Graph(figure=fig_conso_fr)
-            ], style={"flex": "1"}),
-
-            ],style={**CARD_STYLE}
-        )
-    else:
-        content = html.Div([
-
-            html.H2(row["nom"]),
-            html.P(f"EGID: {row['egid']}", style={"color": "gray"}),
-
-            html.P(f"SRE: {row['sre']:,} m²".replace(",", " "), style={"color": "gray"}),
-            html.P(f"Affectation: {row['affectations']}", style={"color": "gray"}),
-
-            html.Div([
-                html.H4("🔥 Chaud", style={"color": "#C00000"}),
-                html.P(f"Producteur: {row['chaud_producteur']}"),
-                html.P(f"Puissance installée: {row['chaud_puissance_installee_kW']:,} kW".replace(",", " ")),
-                html.P(f"Ratio puissance installée: {row['chaud_ratio_puiss_inst_W_m2']} W/m²"),
-                # Graphe des consos
-                dcc.Graph(figure=fig_conso_ch),
-            ], style={"flex": "1"}),
-
-            html.Div([
-                html.H4("❄️ Froid", style={"color": "#00B0F0"}),
-                html.P(f"Producteur: {row['froid_producteur']}"),
-                html.P(f"Puissance installée: {row['froid_puissance_installee_kW']:,} kW".replace(",", " "))
-
-            ], style={"flex": "1"}),
-
-        ], style={**CARD_STYLE}
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            yaxis=dict(title=None),  # Supprimer le titre de l'axe Y
         )
 
-    # ✅ SHOW panel
+    # Création du contenu du panneau latéral
+    content = html.Div(
+        children=[
+            # Titre du site
+            html.H1(row["nom"], style={"fontSize": "15px", "fontWeight": "bold"}),  # Reduced overall size
+            html.P(
+                [html.Strong("EGID: "), row["egid"]],  # Bold EGID label
+                style=style_side_panel_text
+            ),
+            html.P(
+                [html.Strong("SRE: "), f"{row['sre']:,} m²".replace(",", " ")],  # Bold SRE label
+                style=style_side_panel_text
+            ),
+            html.P(
+                [html.Strong("Affectation: "), row["affectations"]],  # Bold Affectation label
+                style=style_side_panel_text
+            ),
+
+            # Carte sur Chaud
+            html.Div([
+                html.H4("🔥 Chaud", style={"color": "#C00000", "fontSize": "13px"}),  # Theme-specific heading
+                html.P(
+                    [html.Strong("Producteur: "), row["chaud_producteur"]],
+                    style=style_side_panel_text
+                ),
+                html.P(
+                    [html.Strong("Puissance installée: "),
+                     f"{row['chaud_puissance_installee_kW']:,} kW".replace(",", " ")],
+                    style=style_side_panel_text
+                ),
+                html.P(
+                    [html.Strong("Ratio puissance installée: "), f"{row['chaud_ratio_puiss_inst_W_m2']} W/m²"],
+                    style=style_side_panel_text
+                ),
+                html.Div(
+                    dcc.Graph(figure=fig_conso_ch),
+                    style=graph_container_style,  # Centre and limit graphic width
+                ),
+            ], style={"marginBottom": "15px"}),
+
+            # Carte sur Froid (only shown if data is available)
+            html.Div([
+                html.H4("❄️ Froid", style={"color": "#00B0F0", "fontSize": "13px"}),  # Theme-specific heading
+                html.P(
+                    [html.Strong("Producteur: "), row["froid_producteur"]],
+                    style=style_side_panel_text
+                ),
+                html.P(
+                    [html.Strong("Puissance installée: "),
+                     f"{row['froid_puissance_installee_kW']:,} kW".replace(",", " ")],
+                    style=style_side_panel_text
+                ),
+                html.Div(
+                    dcc.Graph(figure=fig_conso_fr),
+                    style=graph_container_style,  # Centre and limit graphic width
+                ),
+            ], style={"marginBottom": "15px"}) if fig_conso_fr else None,
+        ],
+        style={
+            "display": "flex",
+            "flexDirection": "column",
+            "gap": "15px",  # Added spacing between sections
+            **CARD_STYLE,
+        },
+    )
+
+    # Modifier le style de la barre latérale
     style = {
         "width": "40%",
         "transition": "0.3s",
         "overflowY": "auto",
+        "padding": "1px",
         "backgroundColor": "#f9f9f9",
         "borderRight": "1px solid #ddd",
-        "padding": "15px"
     }
 
     return content, style
+
+
+
 
 
 @callback(
@@ -458,15 +485,21 @@ def resize_map(selected_rows):
         return {"width": "100%", "height": "100%"}
 
 @callback(
-    Output("building-table", "selected_rows"),
-    Input("building-map", "clickData"),
-    State("building-table", "derived_virtual_data"),
+    Output("building-table", "selected_rows"),  # Select the corresponding table row
+    Input("building-map", "clickData"),  # When a map point is clicked
+    State("building-table", "derived_virtual_data"),  # Current table data
 )
 def select_row_from_map(clickData, rows):
+    """
+    Callback to select a corresponding table row when a map point is clicked.
+    """
+    # No click data or no rows in the table
     if not clickData or rows is None:
         return []
 
+    # Extract the ID of the clicked point
     clicked_id = clickData["points"][0]["customdata"][0]
     df_rows = pd.DataFrame(rows)
 
+    # Find the index of the ID in the table's rows
     return df_rows.index[df_rows["id"] == clicked_id].tolist()
