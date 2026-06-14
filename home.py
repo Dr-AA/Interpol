@@ -107,12 +107,12 @@ def create_page_home():
                             page_action="none",
                             merge_duplicate_headers=True,  # Enable merged headers
                             columns=[
-                                {"name": ["", "Nom"], "id": "nom"},
-                                {"name": ["", "EGID"], "id": "egid"},
-                                {"name": ["", "SRE"], "id": "sre"},
-                                {"name": ["", "Affectations"], "id": "affectations"},
-                                {"name": ["", "Surface enveloppe"], "id": "surface_enveloppe"},
-                                {"name": ["", "Type Construction"], "id": "type_construction"},
+                                {"name": ["Général", "Nom"], "id": "nom"},
+                                {"name": ["Général", "EGID"], "id": "egid"},
+                                {"name": ["Général", "SRE"], "id": "sre"},
+                                {"name": ["Général", "Affectations"], "id": "affectations"},
+                                {"name": ["Général", "Surface enveloppe"], "id": "surface_enveloppe"},
+                                {"name": ["Général", "Type Construction"], "id": "type_construction"},
 
                                 {"name": ["CHAUD", "Producteur"], "id": "chaud_producteur"},
                                 {"name": ["CHAUD", "Puissance Installée (kW)"], "id": "chaud_puissance_installee_kW"},
@@ -142,7 +142,11 @@ def create_page_home():
                                 "fontSize": "11px",
                                 "textAlign": "center",
                                 "minWidth": "100px",
+                                "maxWidth": "200px",
                                 "whiteSpace": "normal",
+                                "height": "auto",
+                                "overflow": "hidden",
+                                "textOverflow": "ellipsis",
                             },
                             style_header={
                                 "backgroundColor": "#f4f6f8",
@@ -151,37 +155,44 @@ def create_page_home():
                             },
                             # Add custom header conditional styling here
                             style_header_conditional=[
-                                # Style "Chaud" merged header
+                                # Style for top-level merged headers (Général, CHAUD, FROID)
                                 {
-                                    "if": {"column_id": ["chaud_producteur","chaud_puissance_installee_kW",
-                                           "chaud_ratio_puiss_inst_W_m2","chaud_puissance_max","chaud_conso_annuelle",
-                                           "chaud_ratio_conso","chaud_type_emetteurs"]},  # First column under "Chaud"
-                                    "backgroundColor": "rgba(204, 0, 0, 0.8)",  # Red background
-                                    "color": "white",  # White text for contrast
+                                    "if": {"header_index": 0},
+                                    "backgroundColor": "rgba(200, 200, 200, 0.9)",
+                                    "color": "black",
                                     "fontWeight": "bold",
-                                    "border": "1px solid black",  # Optional: Red border
+                                    "border": "1px solid black",
+                                    "textAlign": "center",
                                 },
+                                # Style for CHAUD section columns (bottom level)
+                                {
+                                    "if": {"column_id": ["chaud_producteur", "chaud_puissance_installee_kW",
+                                           "chaud_ratio_puiss_inst_W_m2", "chaud_puissance_max",
+                                           "chaud_conso_annuelle", "chaud_ratio_conso", "chaud_type_emetteurs"]},
+                                    "backgroundColor": "rgba(204, 0, 0, 0.8)",
+                                    "color": "white",
+                                    "fontWeight": "bold",
+                                    "border": "1px solid black",
+                                },
+                                # Style for FROID section columns (bottom level)
                                 {
                                     "if": {"column_id": ["froid_producteur", "froid_puissance_installee_kW",
                                                          "froid_ratio_surfacique_W_m2", "froid_puissance_max",
-                                                         "froid_conso_annuelle",
-                                                         "froid_ratio_conso", "froid_type_emetteurs"]},
-                                    "backgroundColor": "rgba(0, 128, 255, 0.8)",  # Red background
-                                    "color": "white",  # White text for contrast
+                                                         "froid_conso_annuelle", "froid_ratio_conso", "froid_type_emetteurs"]},
+                                    "backgroundColor": "rgba(0, 128, 255, 0.8)",
+                                    "color": "white",
                                     "fontWeight": "bold",
-                                    "border": "1px solid black",  # Optional: Red border
+                                    "border": "1px solid black",
                                 },
+                                # Style for Général section columns (bottom level)
                                 {
-                                    "if": {"column_id": ["nom", "egid",
-                                                         "sre", "affectations",
-                                                         "surface_enveloppe",
-                                                         "type_construction"]},
-                                    "backgroundColor": "rgba(119, 118, 118, 0.8)",  # Red background
-                                    "color": "white",  # White text for contrast
+                                    "if": {"column_id": ["nom", "egid", "sre", "affectations",
+                                                         "surface_enveloppe", "type_construction"]},
+                                    "backgroundColor": "rgba(119, 118, 118, 0.8)",
+                                    "color": "white",
                                     "fontWeight": "bold",
-                                    "border": "1px solid black",  # Optional: Red border
+                                    "border": "1px solid black",
                                 },
-
                             ],
                             style_data_conditional=[
                                 {"if": {"row_index": "odd"}, "backgroundColor": "#fafafa"},
@@ -191,11 +202,11 @@ def create_page_home():
 
                     ], style={
                         **CARD_STYLE,
-                        # ✅ CRITICAL FIX
-                        "flex": "0 0 40%",  # FIXED HEIGHT RATIO
+                        "flex": "1",
+                        "minWidth": "500px",
                         "display": "flex",
                         "flexDirection": "column",
-                        "overflow": "hidden"  # prevents overlap
+                        "overflow": "hidden"
                     }),
                     # ================== PANEL AND MAP ==================
                     html.Div(
@@ -224,11 +235,9 @@ def create_page_home():
                         ],
                         style={
                             **CARD_STYLE,
-
-                            # ✅ CRITICAL FIX
-                            "flex": "0 0 60%",  # FIXED HEIGHT RATIO
+                            "flex": "1",
                             "display": "flex",
-                            "overflow": "hidden"  # prevents overlap
+                            "overflow": "hidden"
                         }
                     )
 
