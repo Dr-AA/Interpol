@@ -107,7 +107,7 @@ def create_page_home():
                             page_action="none",
                             merge_duplicate_headers=True,  # Enable merged headers
                             columns=[
-                                {"name": ["Général Bat", "Nom"], "id": "nom"},
+                                {"name": ["Général", "Nom"], "id": "nom"},
                                 {"name": ["Général", "EGID"], "id": "egid"},
                                 {"name": ["Général", "SRE"], "id": "sre"},
                                 {"name": ["Général", "Affectations"], "id": "affectations"},
