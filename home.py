@@ -67,17 +67,34 @@ df_display["froid_conso_annuelle"] = df_display["froid_conso_annuelle"].apply(
 data=df_display.to_dict("records")
 
 
+# Enhanced styling constants
+PRIMARY_COLOR = "#1f388b"
+SECONDARY_COLOR = "#2a48a3"
+ACCENT_COLOR = "#00B0F0"
+
 CARD_STYLE = {
     "backgroundColor": "white",
-    "borderRadius": "12px",
-    "boxShadow": "0 4px 12px rgba(0,0,0,0.08)",
-    "padding": "10px",
+    "borderRadius": "16px",
+    "boxShadow": "0 6px 20px rgba(0,0,0,0.12)",
+    "padding": "20px",
+    "margin": "10px",
+    "border": "1px solid #e0e0e0",
 }
 
 TITLE_STYLE = {
+    "fontWeight": "700",
+    "fontSize": "20px",
+    "marginBottom": "15px",
+    "color": "#1f388b",
+}
+
+SECTION_TITLE_STYLE = {
     "fontWeight": "600",
-    "fontSize": "16px",
-    "marginBottom": "5px"
+    "fontSize": "18px",
+    "marginBottom": "10px",
+    "color": "#1f388b",
+    "borderBottom": "2px solid #1f388b",
+    "paddingBottom": "8px",
 }
 
 def create_page_home():
@@ -87,14 +104,16 @@ def create_page_home():
 
             html.Div(
                 style={
-                    "height": "calc(100vh - 60px)",
+                    "height": "calc(100vh - 70px)",
                     "display": "flex",
                     "flexDirection": "column",
+                    "padding": "15px",
+                    "backgroundColor": "#f8f9fa",
                 },
                 children=[
                     # ================== TABLE ==================
                     html.Div([
-                        html.Div("🏢 Listing des sites", style=TITLE_STYLE),
+                        html.Div("🏢 Listing des sites", style=SECTION_TITLE_STYLE),
                         dash_table.DataTable(
                             id="building-table",
                             data=data,
@@ -195,8 +214,10 @@ def create_page_home():
                                 },
                             ],
                             style_data_conditional=[
-                                {"if": {"row_index": "odd"}, "backgroundColor": "#fafafa"},
-                                {"if": {"state": "selected"}, "backgroundColor": "#cce5ff"},
+                                {"if": {"row_index": "odd"}, "backgroundColor": "#f8f9fa"},
+                                {"if": {"row_index": "even"}, "backgroundColor": "white"},
+                                {"if": {"state": "selected"}, "backgroundColor": "#1f388b1a", "border": "2px solid #1f388b"},
+                                {"if": {"state": "active"}, "backgroundColor": "#e9ecef", "border": "1px solid #dee2e6"},
                             ],
                         ),
 
@@ -318,11 +339,16 @@ def update_map(selected_rows, click_data, filtered_rows, current_map_fig):
     # Highlight the point corresponding to the selection
     fig.update_traces(
         marker=dict(
-            sizemin=10,
+            sizemin=12,
+            size=14,
             color=[
-                "purple" if i == selected_id else "blue"
+                "#1f388b" if i == selected_id else "#00B0F0"
                 for i in dff["id"]
-            ]
+            ],
+            line=dict(
+                width=2,
+                color="white"
+            )
         ),
         hovertemplate=(
             "<b>%{hovertext}</b><br><br>"
@@ -359,15 +385,20 @@ def update_side_panel(selected_rows, rows):
 
     # Styles pour le texte dans le panneau
     style_side_panel_text = {
-        "fontSize": "13px",  # Taille réduite d'1 point
-        "lineHeight": "1.2",  # Espacement entre lignes
-        "color": "#1f388b",  # Uniformiser la couleur
+        "fontSize": "14px",
+        "lineHeight": "1.4",
+        "color": "#1f388b",
+        "marginBottom": "8px",
     }
 
     # Style du conteneur pour recentrer et limiter la largeur des graphiques
     graph_container_style = {
-        "maxWidth": "90%",  # 🔄 Réduit la largeur des graphiques à 90% de la largeur du panel
-        "margin": "0 auto",  # 🔄 Centre horizontalement
+        "maxWidth": "95%",
+        "margin": "0 auto",
+        "backgroundColor": "white",
+        "borderRadius": "8px",
+        "padding": "10px",
+        "boxShadow": "0 2px 8px rgba(0,0,0,0.08)",
     }
 
     # Préparer le graphique pour les consommations
@@ -386,14 +417,24 @@ def update_side_panel(selected_rows, rows):
         y="Consommation_CH",
         title="Consommation annuelle - Chauffage (kWh)",
         text="Consommation_CH",
-        color_discrete_sequence=["#C00000"]
+        color_discrete_sequence=["#dc3545"]
     )
     fig_conso_ch.update_layout(
-        height=220,  # 🔄 Réduction de la hauteur
-        margin=dict(l=10, r=10, t=40, b=10),
-        plot_bgcolor="white",
+        height=240,
+        margin=dict(l=20, r=20, t=50, b=20),
+        plot_bgcolor="#f8f9fa",
         paper_bgcolor="white",
-        yaxis=dict(title=None),  # Supprimer le titre de l'axe Y
+        yaxis=dict(title=None, gridcolor="#dee2e6"),
+        xaxis=dict(gridcolor="#dee2e6"),
+        font=dict(size=11),
+        title_font_size=14,
+        title_font_color="#1f388b",
+    )
+    fig_conso_ch.update_traces(
+        texttemplate="%{text:,.0f}",
+        textposition="outside",
+        marker_line_color="#c82333",
+        marker_line_width=1.5,
     )
 
     # Graphe des consommations de refroidissement
@@ -408,18 +449,36 @@ def update_side_panel(selected_rows, rows):
             color_discrete_sequence=["#00B0F0"]
         )
         fig_conso_fr.update_layout(
-            height=220,  # 🔄 Réduction de la hauteur
-            margin=dict(l=10, r=10, t=40, b=10),
-            plot_bgcolor="white",
+            height=240,
+            margin=dict(l=20, r=20, t=50, b=20),
+            plot_bgcolor="#f8f9fa",
             paper_bgcolor="white",
-            yaxis=dict(title=None),  # Supprimer le titre de l'axe Y
+            yaxis=dict(title=None, gridcolor="#dee2e6"),
+            xaxis=dict(gridcolor="#dee2e6"),
+            font=dict(size=11),
+            title_font_size=14,
+            title_font_color="#1f388b",
+        )
+        fig_conso_fr.update_traces(
+            texttemplate="%{text:,.0f}",
+            textposition="outside",
+            marker_line_color="#0099cc",
+            marker_line_width=1.5,
         )
 
     # Création du contenu du panneau latéral
     content = html.Div(
         children=[
             # Titre du site
-            html.H1(row["nom"], style={"fontSize": "24px", "fontWeight": "bold","textAlign": "center"}),  # Reduced overall size
+            html.H1(row["nom"], style={
+                "fontSize": "26px", 
+                "fontWeight": "bold",
+                "textAlign": "center",
+                "color": "#1f388b",
+                "marginBottom": "20px",
+                "borderBottom": "3px solid #1f388b",
+                "paddingBottom": "10px"
+            }),
             html.P(
                 [html.Strong("EGID: "), row["egid"]],  # Bold EGID label
                 style=style_side_panel_text
@@ -435,7 +494,14 @@ def update_side_panel(selected_rows, rows):
 
             # Carte sur Chaud
             html.Div([
-                html.H4("🔥 Chaud", style={"color": "#C00000", "fontSize": "17px"}),  # Theme-specific heading
+                html.H4("🔥 Chaud", style={
+                    "color": "#dc3545", 
+                    "fontSize": "18px",
+                    "fontWeight": "bold",
+                    "marginTop": "15px",
+                    "paddingBottom": "8px",
+                    "borderBottom": "2px solid #dc3545"
+                }),
                 html.P(
                     [html.Strong("Producteur: "), row["chaud_producteur"]],
                     style=style_side_panel_text
@@ -457,7 +523,14 @@ def update_side_panel(selected_rows, rows):
 
             # Carte sur Froid (only shown if data is available)
             html.Div([
-                html.H4("❄️ Froid", style={"color": "#00B0F0", "fontSize": "17px"}),  # Theme-specific heading
+                html.H4("❄️ Froid", style={
+                    "color": "#00B0F0", 
+                    "fontSize": "18px",
+                    "fontWeight": "bold",
+                    "marginTop": "15px",
+                    "paddingBottom": "8px",
+                    "borderBottom": "2px solid #00B0F0"
+                }),
                 html.P(
                     [html.Strong("Producteur: "), row["froid_producteur"]],
                     style=style_side_panel_text
@@ -486,9 +559,10 @@ def update_side_panel(selected_rows, rows):
         "width": "40%",
         "transition": "0.3s",
         "overflowY": "auto",
-        "padding": "1px",
-        "backgroundColor": "#f9f9f9",
-        "borderRight": "1px solid #ddd",
+        "padding": "20px",
+        "backgroundColor": "white",
+        "borderRight": "2px solid #1f388b",
+        "boxShadow": "0 4px 12px rgba(0,0,0,0.1)",
     }
 
     return content, style
