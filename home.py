@@ -132,8 +132,7 @@ def create_page_home():
                                 {"name": ["FROID", "Type émetteurs"], "id": "froid_type_emetteurs"},
                             ],
                             style_table={
-                                "height": "100%",
-                                "maxHeight": "100%",
+                                "maxHeight": "400px",
                                 "overflowY": "auto",
                                 "overflowX": "auto",
                             },
@@ -334,7 +333,6 @@ def update_map(selected_rows, click_data, filtered_rows, current_map_fig):
     )
 
     return fig
-
 
 
 @callback(
