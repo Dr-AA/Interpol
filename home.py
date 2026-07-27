@@ -151,6 +151,11 @@ def create_page_home():
                                 "backgroundColor": "#f4f6f8",
                                 "fontWeight": "600",
                                 "border": "1px solid #e0e0e0",
+                                "transform": "rotate(-45deg)",
+                                "textAlign": "left",
+                                "padding": "20px 5px",
+                                "height": "80px",
+                                "whiteSpace": "nowrap",
                             },
                             # Add custom header conditional styling here
                             style_header_conditional=[
@@ -162,6 +167,10 @@ def create_page_home():
                                     "fontWeight": "bold",
                                     "border": "1px solid black",
                                     "textAlign": "center",
+                                    "transform": "rotate(-45deg)",
+                                    "height": "80px",
+                                    "padding": "20px 5px",
+                                    "whiteSpace": "nowrap",
                                 },
                                 # Style for CHAUD section columns (bottom level)
                                 {
@@ -172,6 +181,10 @@ def create_page_home():
                                     "color": "white",
                                     "fontWeight": "bold",
                                     "border": "1px solid black",
+                                    "transform": "rotate(-45deg)",
+                                    "height": "80px",
+                                    "padding": "20px 5px",
+                                    "whiteSpace": "nowrap",
                                 },
                                 # Style for FROID section columns (bottom level)
                                 {
@@ -182,6 +195,10 @@ def create_page_home():
                                     "color": "white",
                                     "fontWeight": "bold",
                                     "border": "1px solid black",
+                                    "transform": "rotate(-45deg)",
+                                    "height": "80px",
+                                    "padding": "20px 5px",
+                                    "whiteSpace": "nowrap",
                                 },
                                 # Style for Général section columns (bottom level)
                                 {
@@ -191,6 +208,10 @@ def create_page_home():
                                     "color": "white",
                                     "fontWeight": "bold",
                                     "border": "1px solid black",
+                                    "transform": "rotate(-45deg)",
+                                    "height": "80px",
+                                    "padding": "20px 5px",
+                                    "whiteSpace": "nowrap",
                                 },
                             ],
                             style_data_conditional=[
