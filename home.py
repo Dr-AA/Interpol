@@ -18,7 +18,7 @@ df_buildings = pd.DataFrame(
         "L'Atelier",
         "TPG Bachet",
         "La Praille",
-        "JTI","Campus Biotech","Cité Léopard"
+        "JTI","Campus Biotech","Cité Léopold"
     ],
     "egid": ["295165454", "2040608", "295020439","295161133","295020439","295020439"],
     "sre": [33350, 36614, 52909,25263,50000,50000],
@@ -206,7 +206,7 @@ def create_page_home():
                         "minWidth": "500px",
                         "display": "flex",
                         "flexDirection": "column",
-                        "overflow": "hidden"
+                        "overflow": "auto"
                     }),
                     # ================== PANEL AND MAP ==================
                     html.Div(
@@ -366,8 +366,8 @@ def update_side_panel(selected_rows, rows):
 
     # Style du conteneur pour recentrer et limiter la largeur des graphiques
     graph_container_style = {
-        "maxWidth": "90%",  # 🔄 Réduit la largeur des graphiques à 90% de la largeur du panel
-        "margin": "0 auto",  # 🔄 Centre horizontalement
+        "maxWidth": "90%",  # 🔹 Réduit la largeur des graphiques à 90% de la largeur du panel
+        "margin": "0 auto",  # 🔹 Centre horizontalement
     }
 
     # Préparer le graphique pour les consommations
@@ -389,7 +389,7 @@ def update_side_panel(selected_rows, rows):
         color_discrete_sequence=["#C00000"]
     )
     fig_conso_ch.update_layout(
-        height=220,  # 🔄 Réduction de la hauteur
+        height=220,  # 🔹 Réduction de la hauteur
         margin=dict(l=10, r=10, t=40, b=10),
         plot_bgcolor="white",
         paper_bgcolor="white",
@@ -408,7 +408,7 @@ def update_side_panel(selected_rows, rows):
             color_discrete_sequence=["#00B0F0"]
         )
         fig_conso_fr.update_layout(
-            height=220,  # 🔄 Réduction de la hauteur
+            height=220,  # 🔹 Réduction de la hauteur
             margin=dict(l=10, r=10, t=40, b=10),
             plot_bgcolor="white",
             paper_bgcolor="white",
