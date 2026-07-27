@@ -168,7 +168,7 @@ def create_page_home():
                                     "if": {"column_id": ["chaud_producteur", "chaud_puissance_installee_kW",
                                            "chaud_ratio_puiss_inst_W_m2", "chaud_puissance_max",
                                            "chaud_conso_annuelle", "chaud_ratio_conso", "chaud_type_emetteurs"]},
-                                    "backgroundColor": "rgba(204, 0, 0, 0.8)",
+                                    "backgroundColor": "rgba(204, 0, 0, 0.7)",
                                     "color": "white",
                                     "fontWeight": "bold",
                                     "border": "1px solid black",
@@ -303,14 +303,14 @@ def update_map(selected_rows, click_data, filtered_rows, current_map_fig):
             "chaud_puissance_installee_kW",
             "chaud_ratio_puiss_inst_W_m2"
         ],
-        zoom=13,
+        zoom=11,
     )
 
     # Update map layout with new center and zoom
     fig.update_layout(
         mapbox_style="open-street-map",
         mapbox_center=center,  # Center updated dynamically
-        mapbox_zoom=14,
+        mapbox_zoom=11,
         margin={"l": 0, "r": 0, "t": 0, "b": 0},
     )
 
