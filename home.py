@@ -90,9 +90,10 @@ def create_page_home():
                     "height": "calc(100vh - 60px)",
                     "display": "flex",
                     "flexDirection": "column",
+                    "gap": "10px",
                 },
                 children=[
-                    # ================== TABLE ==================
+                    # ================== TABLE AT THE TOP ==================
                     html.Div([
                         html.Div("🏢 Listing des sites", style=TITLE_STYLE),
                         dash_table.DataTable(
@@ -105,7 +106,7 @@ def create_page_home():
                             filter_action="native",
                             sort_action="native",
                             page_action="none",
-                            merge_duplicate_headers=True,  # Enable merged headers
+                            merge_duplicate_headers=True,
                             columns=[
                                 {"name": ["Général", "Nom"], "id": "nom"},
                                 {"name": ["Général", "EGID"], "id": "egid"},
@@ -132,7 +133,9 @@ def create_page_home():
                                 {"name": ["FROID", "Type émetteurs"], "id": "froid_type_emetteurs"},
                             ],
                             style_table={
-                                "maxHeight": "400px",
+                                "height": "40vh",
+                                "minHeight": "300px",
+                                "maxHeight": "50vh",
                                 "overflowY": "auto",
                                 "overflowX": "auto",
                             },
@@ -152,9 +155,7 @@ def create_page_home():
                                 "fontWeight": "600",
                                 "border": "1px solid #e0e0e0",
                             },
-                            # Add custom header conditional styling here
                             style_header_conditional=[
-                                # Style for top-level merged headers (Général, CHAUD, FROID)
                                 {
                                     "if": {"header_index": 0},
                                     "backgroundColor": "rgba(200, 200, 200, 0.9)",
@@ -163,7 +164,6 @@ def create_page_home():
                                     "border": "1px solid black",
                                     "textAlign": "center",
                                 },
-                                # Style for CHAUD section columns (bottom level)
                                 {
                                     "if": {"column_id": ["chaud_producteur", "chaud_puissance_installee_kW",
                                            "chaud_ratio_puiss_inst_W_m2", "chaud_puissance_max",
@@ -173,7 +173,6 @@ def create_page_home():
                                     "fontWeight": "bold",
                                     "border": "1px solid black",
                                 },
-                                # Style for FROID section columns (bottom level)
                                 {
                                     "if": {"column_id": ["froid_producteur", "froid_puissance_installee_kW",
                                                          "froid_ratio_surfacique_W_m2", "froid_puissance_max",
@@ -183,7 +182,6 @@ def create_page_home():
                                     "fontWeight": "bold",
                                     "border": "1px solid black",
                                 },
-                                # Style for Général section columns (bottom level)
                                 {
                                     "if": {"column_id": ["nom", "egid", "sre", "affectations",
                                                          "surface_enveloppe", "type_construction"]},
@@ -198,48 +196,65 @@ def create_page_home():
                                 {"if": {"state": "selected"}, "backgroundColor": "#cce5ff"},
                             ],
                         ),
-
                     ], style={
                         **CARD_STYLE,
-                        "flex": "1",
-                        "minWidth": "500px",
-                        "display": "flex",
-                        "flexDirection": "column",
-                        "overflow": "auto"
+                        "flex": "none",
+                        "minHeight": "300px",
                     }),
-                    # ================== PANEL AND MAP ==================
+                    
+                    # ================== MAP AND SIDE PANEL CONTAINER ==================
                     html.Div(
+                        style={
+                            "flex": "1",
+                            "display": "flex",
+                            "position": "relative",
+                            "overflow": "hidden",
+                            "minHeight": "0",
+                        },
                         children=[
-                            # SIDE PANEL
+                            # MAP - fills the container
+                            html.Div(
+                                id="map-container",
+                                style={
+                                    "width": "100%",
+                                    "height": "100%",
+                                    "transition": "all 0.3s ease",
+                                },
+                                children=[
+                                    dcc.Graph(
+                                        id="building-map",
+                                        style={"height": "100%"},
+                                        config={"displayModeBar": True, "displaylogo": False}
+                                    )
+                                ],
+                            ),
+                            
+                            # SIDE PANEL - positioned at bottom left
                             html.Div(
                                 id="side-panel",
                                 style={
-                                    "width": "0%",  # hidden by default
-                                    "transition": "0.3s",
-                                    "overflow": "hidden",
+                                    "position": "absolute",
+                                    "bottom": "0",
+                                    "left": "0",
+                                    "width": "40%",
+                                    "height": "0%",
+                                    "transition": "height 0.3s ease",
+                                    "overflowY": "auto",
+                                    "overflowX": "hidden",
                                     "backgroundColor": "#f9f9f9",
+                                    "borderTop": "1px solid #ddd",
                                     "borderRight": "1px solid #ddd",
-                                    "padding": "10px"
+                                    "borderBottom": "none",
+                                    "borderLeft": "none",
+                                    "zIndex": "10",
+                                    "boxShadow": "0 -2px 5px rgba(0,0,0,0.1)",
+                                    "borderTopLeftRadius": "12px",
+                                    "borderTopRightRadius": "12px",
                                 },
                                 children=[]
                             ),
-                            # MAP
-                            html.Div(
-                                id="map-container",
-                                style={"width": "100%", "height": "100%"},
-                                children=[
-                                    dcc.Graph(id="building-map", style={"height": "100%"})
-                                ],
-                            ),
                         ],
-                        style={
-                            **CARD_STYLE,
-                            "flex": "1",
-                            "display": "flex",
-                            "overflow": "hidden"
-                        }
-                    )
-
+                    ),
                 ],
             ),
         ],
@@ -257,40 +272,35 @@ import pandas as pd
 
 @callback(
     Output("building-map", "figure"),
-    Input("building-table", "selected_rows"),  # Table selection
-    Input("building-map", "clickData"),  # Map click
-    State("building-table", "derived_virtual_data"),  # Current filtered rows from table
-    State("building-map", "figure"),  # Current map figure state
+    Input("building-table", "selected_rows"),
+    Input("building-map", "clickData"),
+    State("building-table", "derived_virtual_data"),
+    State("building-map", "figure"),
 )
 def update_map(selected_rows, click_data, filtered_rows, current_map_fig):
     """
     Callback to update the map's center when either a row is selected or a point is clicked.
     """
 
-    # DataFrame from DataTable or fallback to full dataset if none
     dff = pd.DataFrame(filtered_rows) if filtered_rows else df_buildings
 
-    # Default to Geneva Center if no selection is made
     center = GENEVA_CENTER
     selected_id = None
 
-    # Handle table row selection
     if selected_rows:
         try:
-            selected_row = dff.iloc[selected_rows[0]]  # Get first selected row
+            selected_row = dff.iloc[selected_rows[0]]
             center = {"lat": selected_row["lat"], "lon": selected_row["lon"]}
             selected_id = selected_row["id"]
         except IndexError:
-            pass  # In case selected_rows is out of sync
+            pass
 
-    # Handle map click selection
     if click_data:
-        clicked_id = click_data["points"][0]["customdata"][0]  # Extract ID from clicked point
+        clicked_id = click_data["points"][0]["customdata"][0]
         clicked_row = dff[dff["id"] == clicked_id].iloc[0]
         center = {"lat": clicked_row["lat"], "lon": clicked_row["lon"]}
         selected_id = clicked_id
 
-    # Create the map figure
     fig = px.scatter_mapbox(
         dff,
         lat="lat",
@@ -306,15 +316,14 @@ def update_map(selected_rows, click_data, filtered_rows, current_map_fig):
         zoom=11,
     )
 
-    # Update map layout with new center and zoom
     fig.update_layout(
         mapbox_style="open-street-map",
-        mapbox_center=center,  # Center updated dynamically
+        mapbox_center=center,
         mapbox_zoom=11,
         margin={"l": 0, "r": 0, "t": 0, "b": 0},
+        height=600,
     )
 
-    # Highlight the point corresponding to the selection
     fig.update_traces(
         marker=dict(
             sizemin=10,
@@ -343,32 +352,42 @@ def update_map(selected_rows, click_data, filtered_rows, current_map_fig):
 )
 def update_side_panel(selected_rows, rows):
     if not selected_rows or rows is None:
-        # ✅ HIDE SIDE PANEL (par défaut)
         return [], {
-            "width": "0%",
-            "transition": "0.3s",
-            "overflow": "hidden",
+            "position": "absolute",
+            "bottom": "0",
+            "left": "0",
+            "width": "40%",
+            "height": "0%",
+            "transition": "height 0.3s ease",
+            "overflowY": "auto",
+            "overflowX": "hidden",
+            "backgroundColor": "#f9f9f9",
+            "borderTop": "1px solid #ddd",
+            "borderRight": "1px solid #ddd",
+            "borderBottom": "none",
+            "borderLeft": "none",
+            "zIndex": "10",
+            "boxShadow": "0 -2px 5px rgba(0,0,0,0.1)",
+            "borderTopLeftRadius": "12px",
+            "borderTopRightRadius": "12px",
         }
 
-    # Récupérer les données de la ligne sélectionnée
     dff_table = pd.DataFrame(rows)
     row_table = dff_table.iloc[selected_rows[0]]
     row = df_buildings[df_buildings["id"] == row_table["id"]].iloc[0]
 
-    # Styles pour le texte dans le panneau
     style_side_panel_text = {
-        "fontSize": "13px",  # Taille réduite d'1 point
-        "lineHeight": "1.2",  # Espacement entre lignes
-        "color": "#1f388b",  # Uniformiser la couleur
+        "fontSize": "13px",
+        "lineHeight": "1.2",
+        "color": "#1f388b",
     }
 
-    # Style du conteneur pour recentrer et limiter la largeur des graphiques
     graph_container_style = {
-        "maxWidth": "90%",  # 🔹 Réduit la largeur des graphiques à 90% de la largeur du panel
-        "margin": "0 auto",  # 🔹 Centre horizontalement
+        "width": "95%",
+        "margin": "0 auto",
+        "maxWidth": "800px",
     }
 
-    # Préparer le graphique pour les consommations
     conso_dict_CH = row["chaud_conso_annuelle"]
     conso_dict_FR = row["froid_conso_annuelle"]
     df_conso = pd.DataFrame({
@@ -377,7 +396,6 @@ def update_side_panel(selected_rows, rows):
         "Consommation_FR": list(conso_dict_FR.values())
     })
 
-    # Graphe des consommations de chauffage
     fig_conso_ch = px.bar(
         df_conso,
         x="Année",
@@ -387,14 +405,14 @@ def update_side_panel(selected_rows, rows):
         color_discrete_sequence=["#C00000"]
     )
     fig_conso_ch.update_layout(
-        height=220,  # 🔹 Réduction de la hauteur
+        height=250,
         margin=dict(l=10, r=10, t=40, b=10),
         plot_bgcolor="white",
         paper_bgcolor="white",
-        yaxis=dict(title=None),  # Supprimer le titre de l'axe Y
+        yaxis=dict(title=None),
     )
+    fig_conso_ch.update_traces(textposition='outside')
 
-    # Graphe des consommations de refroidissement
     fig_conso_fr = None
     if row["froid_puissance_installee_kW"] > 0:
         fig_conso_fr = px.bar(
@@ -406,34 +424,32 @@ def update_side_panel(selected_rows, rows):
             color_discrete_sequence=["#00B0F0"]
         )
         fig_conso_fr.update_layout(
-            height=220,  # 🔹 Réduction de la hauteur
+            height=250,
             margin=dict(l=10, r=10, t=40, b=10),
             plot_bgcolor="white",
             paper_bgcolor="white",
-            yaxis=dict(title=None),  # Supprimer le titre de l'axe Y
+            yaxis=dict(title=None),
         )
+        fig_conso_fr.update_traces(textposition='outside')
 
-    # Création du contenu du panneau latéral
     content = html.Div(
         children=[
-            # Titre du site
-            html.H1(row["nom"], style={"fontSize": "24px", "fontWeight": "bold","textAlign": "center"}),  # Reduced overall size
+            html.H1(row["nom"], style={"fontSize": "24px", "fontWeight": "bold","textAlign": "center"}),
             html.P(
-                [html.Strong("EGID: "), row["egid"]],  # Bold EGID label
+                [html.Strong("EGID: "), row["egid"]],
                 style=style_side_panel_text
             ),
             html.P(
-                [html.Strong("SRE: "), f"{row['sre']:,} m²".replace(",", " ")],  # Bold SRE label
+                [html.Strong("SRE: "), f"{row['sre']:,} m²".replace(",", " ")],
                 style=style_side_panel_text
             ),
             html.P(
-                [html.Strong("Affectation: "), row["affectations"]],  # Bold Affectation label
+                [html.Strong("Affectation: "), row["affectations"]],
                 style=style_side_panel_text
             ),
 
-            # Carte sur Chaud
             html.Div([
-                html.H4("🔥 Chaud", style={"color": "#C00000", "fontSize": "17px"}),  # Theme-specific heading
+                html.H4("🔥 Chaud", style={"color": "#C00000", "fontSize": "17px"}),
                 html.P(
                     [html.Strong("Producteur: "), row["chaud_producteur"]],
                     style=style_side_panel_text
@@ -448,14 +464,17 @@ def update_side_panel(selected_rows, rows):
                     style=style_side_panel_text
                 ),
                 html.Div(
-                    dcc.Graph(figure=fig_conso_ch),
-                    style=graph_container_style,  # Centre and limit graphic width
+                    dcc.Graph(
+                        figure=fig_conso_ch,
+                        config={"displayModeBar": False, "responsive": True},
+                        style={"width": "100%"}
+                    ),
+                    style=graph_container_style,
                 ),
             ], style={"marginBottom": "15px"}),
 
-            # Carte sur Froid (only shown if data is available)
             html.Div([
-                html.H4("❄️ Froid", style={"color": "#00B0F0", "fontSize": "17px"}),  # Theme-specific heading
+                html.H4("❄️ Froid", style={"color": "#00B0F0", "fontSize": "17px"}),
                 html.P(
                     [html.Strong("Producteur: "), row["froid_producteur"]],
                     style=style_side_panel_text
@@ -466,62 +485,61 @@ def update_side_panel(selected_rows, rows):
                     style=style_side_panel_text
                 ),
                 html.Div(
-                    dcc.Graph(figure=fig_conso_fr),
-                    style=graph_container_style,  # Centre and limit graphic width
+                    dcc.Graph(
+                        figure=fig_conso_fr,
+                        config={"displayModeBar": False, "responsive": True},
+                        style={"width": "100%"}
+                    ),
+                    style=graph_container_style,
                 ),
             ], style={"marginBottom": "15px"}) if fig_conso_fr else None,
         ],
         style={
             "display": "flex",
             "flexDirection": "column",
-            "gap": "15px",  # Added spacing between sections
+            "gap": "15px",
+            "padding": "15px",
             **CARD_STYLE,
+            "minWidth": "350px",
+            "maxWidth": "500px",
+            "maxHeight": "70vh",
+            "overflowY": "auto",
         },
     )
 
-    # Modifier le style de la barre latérale
     style = {
+        "position": "absolute",
+        "bottom": "0",
+        "left": "0",
         "width": "40%",
-        "transition": "0.3s",
+        "height": "70%",
+        "transition": "height 0.3s ease",
         "overflowY": "auto",
-        "padding": "1px",
+        "overflowX": "hidden",
         "backgroundColor": "#f9f9f9",
+        "borderTop": "1px solid #ddd",
         "borderRight": "1px solid #ddd",
+        "borderBottom": "none",
+        "borderLeft": "none",
+        "zIndex": "10",
+        "boxShadow": "0 -2px 5px rgba(0,0,0,0.1)",
+        "borderTopLeftRadius": "12px",
+        "borderTopRightRadius": "12px",
     }
 
     return content, style
 
 
-
-
-
 @callback(
-    Output("map-container", "style"),
-    Input("building-table", "selected_rows"),
-)
-def resize_map(selected_rows):
-
-    if selected_rows:
-        return {"width": "60%", "height": "100%"}
-    else:
-        return {"width": "100%", "height": "100%"}
-
-@callback(
-    Output("building-table", "selected_rows"),  # Select the corresponding table row
-    Input("building-map", "clickData"),  # When a map point is clicked
-    State("building-table", "derived_virtual_data"),  # Current table data
+    Output("building-table", "selected_rows"),
+    Input("building-map", "clickData"),
+    State("building-table", "derived_virtual_data"),
 )
 def select_row_from_map(clickData, rows):
-    """
-    Callback to select a corresponding table row when a map point is clicked.
-    """
-    # No click data or no rows in the table
     if not clickData or rows is None:
         return []
 
-    # Extract the ID of the clicked point
     clicked_id = clickData["points"][0]["customdata"][0]
     df_rows = pd.DataFrame(rows)
 
-    # Find the index of the ID in the table's rows
     return df_rows.index[df_rows["id"] == clicked_id].tolist()
