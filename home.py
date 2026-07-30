@@ -1,7 +1,8 @@
-from dash import html, dcc, dash_table, Input, Output, State, callback
+from dash import html, dcc, dash_table, Input, Output, State, callback, ctx
 import plotly.express as px
 import pandas as pd
 from navbar import create_navbar
+import dash_bootstrap_components as dbc
 
 # COORDO DE GENEVE CENTRE
 GENEVA_CENTER = {"lat": 46.2044, "lon": 6.1432}
@@ -84,6 +85,8 @@ def create_page_home():
     return html.Div(
         [
             nav,
+            # Hidden div to store panel open state
+            dcc.Store(id='side-panel-open', data=False),
 
             html.Div(
                 style={
@@ -253,6 +256,31 @@ def create_page_home():
                                 },
                                 children=[]
                             ),
+                            
+                            # CLOSE BUTTON - positioned at top right of panel area
+                            html.Div(
+                                id="close-button-container",
+                                style={
+                                    "position": "absolute",
+                                    "bottom": "0",
+                                    "right": "0",
+                                    "zIndex": "20",
+                                    "display": "none",
+                                },
+                                children=[
+                                    dbc.Button(
+                                        "× Close",
+                                        id="close-panel-button",
+                                        color="danger",
+                                        size="sm",
+                                        style={
+                                            "borderRadius": "0 0 12px 0",
+                                            "margin": "0",
+                                            "padding": "5px 10px",
+                                        }
+                                    )
+                                ]
+                            ),
                         ],
                     ),
                 ],
@@ -347,11 +375,18 @@ def update_map(selected_rows, click_data, filtered_rows, current_map_fig):
 @callback(
     Output("side-panel", "children"),
     Output("side-panel", "style"),
+    Output("close-button-container", "style"),
     Input("building-table", "selected_rows"),
+    Input("close-panel-button", "n_clicks"),
     State("building-table", "derived_virtual_data"),
+    State("side-panel-open", "data"),
+    prevent_initial_call=True,
 )
-def update_side_panel(selected_rows, rows):
-    if not selected_rows or rows is None:
+def update_side_panel(selected_rows, close_clicks, rows, is_open):
+    ctx = callback_context
+    
+    # Determine if we should open or close the panel
+    if not ctx.triggered:
         return [], {
             "position": "absolute",
             "bottom": "0",
@@ -370,99 +405,135 @@ def update_side_panel(selected_rows, rows):
             "boxShadow": "0 -2px 5px rgba(0,0,0,0.1)",
             "borderTopLeftRadius": "12px",
             "borderTopRightRadius": "12px",
+        }, {
+            "position": "absolute",
+            "bottom": "0",
+            "right": "0",
+            "zIndex": "20",
+            "display": "none",
+        }
+    
+    trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    
+    # If close button was clicked, close the panel
+    if trigger_id == "close-panel-button":
+        return [], {
+            "position": "absolute",
+            "bottom": "0",
+            "left": "0",
+            "width": "40%",
+            "height": "0%",
+            "transition": "height 0.3s ease",
+            "overflowY": "auto",
+            "overflowX": "hidden",
+            "backgroundColor": "#f9f9f9",
+            "borderTop": "1px solid #ddd",
+            "borderRight": "1px solid #ddd",
+            "borderBottom": "none",
+            "borderLeft": "none",
+            "zIndex": "10",
+            "boxShadow": "0 -2px 5px rgba(0,0,0,0.1)",
+            "borderTopLeftRadius": "12px",
+            "borderTopRightRadius": "12px",
+        }, {
+            "position": "absolute",
+            "bottom": "0",
+            "right": "0",
+            "zIndex": "20",
+            "display": "none",
+        }
+    
+    # If table row was selected, open the panel
+    if trigger_id == "building-table" and selected_rows and rows is not None:
+        dff_table = pd.DataFrame(rows)
+        row_table = dff_table.iloc[selected_rows[0]]
+        row = df_buildings[df_buildings["id"] == row_table["id"]].iloc[0]
+
+        style_side_panel_text = {
+            "fontSize": "13px",
+            "lineHeight": "1.2",
+            "color": "#1f388b",
         }
 
-    dff_table = pd.DataFrame(rows)
-    row_table = dff_table.iloc[selected_rows[0]]
-    row = df_buildings[df_buildings["id"] == row_table["id"]].iloc[0]
+        graph_container_style = {
+            "width": "95%",
+            "margin": "0 auto",
+            "maxWidth": "800px",
+        }
 
-    style_side_panel_text = {
-        "fontSize": "13px",
-        "lineHeight": "1.2",
-        "color": "#1f388b",
-    }
+        conso_dict_CH = row["chaud_conso_annuelle"]
+        conso_dict_FR = row["froid_conso_annuelle"]
+        df_conso = pd.DataFrame({
+            "Année": list(conso_dict_CH.keys()),
+            "Consommation_CH": list(conso_dict_CH.values()),
+            "Consommation_FR": list(conso_dict_FR.values())
+        })
 
-    graph_container_style = {
-        "width": "95%",
-        "margin": "0 auto",
-        "maxWidth": "800px",
-    }
-
-    conso_dict_CH = row["chaud_conso_annuelle"]
-    conso_dict_FR = row["froid_conso_annuelle"]
-    df_conso = pd.DataFrame({
-        "Année": list(conso_dict_CH.keys()),
-        "Consommation_CH": list(conso_dict_CH.values()),
-        "Consommation_FR": list(conso_dict_FR.values())
-    })
-
-    fig_conso_ch = px.bar(
-        df_conso,
-        x="Année",
-        y="Consommation_CH",
-        title="Consommation annuelle - Chauffage (kWh)",
-        text="Consommation_CH",
-        color_discrete_sequence=["#C00000"]
-    )
-    fig_conso_ch.update_layout(
-        height=250,
-        margin=dict(l=10, r=10, t=40, b=10),
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-        yaxis=dict(title=None),
-    )
-    fig_conso_ch.update_traces(textposition='outside')
-
-    fig_conso_fr = None
-    if row["froid_puissance_installee_kW"] > 0:
-        fig_conso_fr = px.bar(
+        fig_conso_ch = px.bar(
             df_conso,
             x="Année",
-            y="Consommation_FR",
-            title="Consommation annuelle - Froid (kWh)",
-            text="Consommation_FR",
-            color_discrete_sequence=["#00B0F0"]
+            y="Consommation_CH",
+            title="Consommation annuelle - Chauffage (kWh)",
+            text="Consommation_CH",
+            color_discrete_sequence=["#C00000"]
         )
-        fig_conso_fr.update_layout(
+        fig_conso_ch.update_layout(
             height=250,
             margin=dict(l=10, r=10, t=40, b=10),
             plot_bgcolor="white",
             paper_bgcolor="white",
             yaxis=dict(title=None),
         )
-        fig_conso_fr.update_traces(textposition='outside')
+        fig_conso_ch.update_traces(textposition='outside')
 
-    content = html.Div(
-        children=[
-            html.H1(row["nom"], style={"fontSize": "24px", "fontWeight": "bold","textAlign": "center"}),
-            html.P(
-                [html.Strong("EGID: "), row["egid"]],
-                style=style_side_panel_text
-            ),
-            html.P(
-                [html.Strong("SRE: "), f"{row['sre']:,} m²".replace(",", " ")],
-                style=style_side_panel_text
-            ),
-            html.P(
-                [html.Strong("Affectation: "), row["affectations"]],
-                style=style_side_panel_text
-            ),
+        fig_conso_fr = None
+        if row["froid_puissance_installee_kW"] > 0:
+            fig_conso_fr = px.bar(
+                df_conso,
+                x="Année",
+                y="Consommation_FR",
+                title="Consommation annuelle - Froid (kWh)",
+                text="Consommation_FR",
+                color_discrete_sequence=["#00B0F0"]
+            )
+            fig_conso_fr.update_layout(
+                height=250,
+                margin=dict(l=10, r=10, t=40, b=10),
+                plot_bgcolor="white",
+                paper_bgcolor="white",
+                yaxis=dict(title=None),
+            )
+            fig_conso_fr.update_traces(textposition='outside')
 
-            html.Div([
-                html.H4("🔥 Chaud", style={"color": "#C00000", "fontSize": "17px"}),
-                html.P(
-                    [html.Strong("Producteur: "), row["chaud_producteur"]],
-                    style=style_side_panel_text
-                ),
-                html.P(
-                    [html.Strong("Puissance installée: "),
-                     f"{row['chaud_puissance_installee_kW']:,} kW".replace(",", " ")],
-                    style=style_side_panel_text
-                ),
-                html.P(
-                    [html.Strong("Ratio puissance installée: "), f"{row['chaud_ratio_puiss_inst_W_m2']} W/m²"],
-                    style=style_side_panel_text
-                ),
+        # Single continuous content (not split into sections)
+        content = html.Div(
+            children=[
+                # Header with close button
+                html.Div([
+                    html.H1(row["nom"], style={"fontSize": "24px", "fontWeight": "bold", "margin": "0", "display": "inline-block"}),
+                    html.Span(
+                        " × ",
+                        id="close-x",
+                        style={
+                            "cursor": "pointer",
+                            "fontSize": "24px",
+                            "color": "#dc3545",
+                            "float": "right",
+                            "marginTop": "5px",
+                        }
+                    ),
+                ], style={"width": "100%", "marginBottom": "10px"}),
+                
+                html.P([html.Strong("EGID: "), row["egid"]], style=style_side_panel_text),
+                html.P([html.Strong("SRE: "), f"{row['sre']:,} m²".replace(",", " ")], style=style_side_panel_text),
+                html.P([html.Strong("Affectation: "), row["affectations"]], style=style_side_panel_text),
+                html.Hr(style={"margin": "10px 0", "border": "none", "borderTop": "1px solid #eee"}),
+                
+                html.H4("🔥 Chaud", style={"color": "#C00000", "fontSize": "17px", "marginTop": "10px"}),
+                html.P([html.Strong("Producteur: "), row["chaud_producteur"]], style=style_side_panel_text),
+                html.P([html.Strong("Puissance installée: "), f"{row['chaud_puissance_installee_kW']:,} kW".replace(",", " ")], style=style_side_panel_text),
+                html.P([html.Strong("Ratio puissance installée: "), f"{row['chaud_ratio_puiss_inst_W_m2']} W/m²"], style=style_side_panel_text),
+                
                 html.Div(
                     dcc.Graph(
                         figure=fig_conso_ch,
@@ -471,19 +542,13 @@ def update_side_panel(selected_rows, rows):
                     ),
                     style=graph_container_style,
                 ),
-            ], style={"marginBottom": "15px"}),
-
-            html.Div([
-                html.H4("❄️ Froid", style={"color": "#00B0F0", "fontSize": "17px"}),
-                html.P(
-                    [html.Strong("Producteur: "), row["froid_producteur"]],
-                    style=style_side_panel_text
-                ),
-                html.P(
-                    [html.Strong("Puissance installée: "),
-                     f"{row['froid_puissance_installee_kW']:,} kW".replace(",", " ")],
-                    style=style_side_panel_text
-                ),
+                
+                html.Hr(style={"margin": "10px 0", "border": "none", "borderTop": "1px solid #eee"}),
+                
+                html.H4("❄️ Froid", style={"color": "#00B0F0", "fontSize": "17px", "marginTop": "10px"}),
+                html.P([html.Strong("Producteur: "), row["froid_producteur"]], style=style_side_panel_text),
+                html.P([html.Strong("Puissance installée: "), f"{row['froid_puissance_installee_kW']:,} kW".replace(",", " ")], style=style_side_panel_text),
+                
                 html.Div(
                     dcc.Graph(
                         figure=fig_conso_fr,
@@ -491,28 +556,58 @@ def update_side_panel(selected_rows, rows):
                         style={"width": "100%"}
                     ),
                     style=graph_container_style,
-                ),
-            ], style={"marginBottom": "15px"}) if fig_conso_fr else None,
-        ],
-        style={
-            "display": "flex",
-            "flexDirection": "column",
-            "gap": "15px",
-            "padding": "15px",
-            **CARD_STYLE,
-            "minWidth": "350px",
-            "maxWidth": "500px",
-            "maxHeight": "70vh",
-            "overflowY": "auto",
-        },
-    )
+                ) if fig_conso_fr else None,
+            ],
+            style={
+                "display": "flex",
+                "flexDirection": "column",
+                "gap": "8px",
+                "padding": "15px",
+                **CARD_STYLE,
+                "minWidth": "350px",
+                "maxWidth": "500px",
+                "maxHeight": "70vh",
+                "overflowY": "auto",
+            },
+        )
 
-    style = {
+        panel_style = {
+            "position": "absolute",
+            "bottom": "0",
+            "left": "0",
+            "width": "40%",
+            "height": "70%",
+            "transition": "height 0.3s ease",
+            "overflowY": "auto",
+            "overflowX": "hidden",
+            "backgroundColor": "#f9f9f9",
+            "borderTop": "1px solid #ddd",
+            "borderRight": "1px solid #ddd",
+            "borderBottom": "none",
+            "borderLeft": "none",
+            "zIndex": "10",
+            "boxShadow": "0 -2px 5px rgba(0,0,0,0.1)",
+            "borderTopLeftRadius": "12px",
+            "borderTopRightRadius": "12px",
+        }
+
+        button_style = {
+            "position": "absolute",
+            "bottom": "0",
+            "right": "0",
+            "zIndex": "20",
+            "display": "block",
+        }
+
+        return content, panel_style, button_style
+    
+    # Default: close the panel
+    return [], {
         "position": "absolute",
         "bottom": "0",
         "left": "0",
         "width": "40%",
-        "height": "70%",
+        "height": "0%",
         "transition": "height 0.3s ease",
         "overflowY": "auto",
         "overflowX": "hidden",
@@ -525,21 +620,38 @@ def update_side_panel(selected_rows, rows):
         "boxShadow": "0 -2px 5px rgba(0,0,0,0.1)",
         "borderTopLeftRadius": "12px",
         "borderTopRightRadius": "12px",
+    }, {
+        "position": "absolute",
+        "bottom": "0",
+        "right": "0",
+        "zIndex": "20",
+        "display": "none",
     }
-
-    return content, style
 
 
 @callback(
     Output("building-table", "selected_rows"),
     Input("building-map", "clickData"),
+    Input("close-panel-button", "n_clicks"),
     State("building-table", "derived_virtual_data"),
+    prevent_initial_call=True,
 )
-def select_row_from_map(clickData, rows):
-    if not clickData or rows is None:
+def select_row_from_map(clickData, close_clicks, rows):
+    ctx = callback_context
+    
+    if not ctx.triggered:
         return []
-
-    clicked_id = clickData["points"][0]["customdata"][0]
-    df_rows = pd.DataFrame(rows)
-
-    return df_rows.index[df_rows["id"] == clicked_id].tolist()
+    
+    trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    
+    # If close button was clicked, clear selection
+    if trigger_id == "close-panel-button":
+        return []
+    
+    # If map was clicked, select the corresponding row
+    if trigger_id == "building-map" and clickData and rows is not None:
+        clicked_id = clickData["points"][0]["customdata"][0]
+        df_rows = pd.DataFrame(rows)
+        return df_rows.index[df_rows["id"] == clicked_id].tolist()
+    
+    return []
